@@ -92,8 +92,12 @@ Specialized agents that execute discrete, repeatable tasks under Supervisor dire
 
 ## Deployment Status
 
-> **Oracle VM deployment is pending.**
-> The production MKAI agent runtime will be hosted on an Oracle Cloud VM. Until deployment is complete, all agent operations run locally via Claude Code with MCP tool access. Plans and outputs generated here will be migrated to the VM runtime upon provisioning.
+> **Oracle VM is live.** `us-phoenix-1` | Public IP: `129.151.26.21` | Compartment: `dddesigns12`
+> Claude Code v2.1.101 + Gemini CLI 0.37.1 authenticated and running from `/root/mkai-model-engine/`.
+> Repo syncs every 15 min via cron `git pull`.
+>
+> **Remaining:** Docker + n8n install, Oracle Security List ports, Twingate Connector on VM.
+> See `reference/vm-stack-status.md` for full details.
 
 ---
 

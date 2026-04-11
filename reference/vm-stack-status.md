@@ -7,9 +7,13 @@
 |---|---|
 | Provider | Oracle Cloud Infrastructure |
 | Region | us-phoenix-1 |
-| User | root (cloudshell) |
+| Compartment | dddesigns12 (root) |
+| VCN CIDR | 10.0.0.0/16 |
+| Public IP | 129.151.26.21 |
 | Private IP | 10.0.0.159 |
+| User | root (cloudshell) |
 | Access | Twingate → SSH (`ssh oracle-vm`) |
+| VCN Created | Apr 8, 2026 |
 
 ---
 
@@ -76,9 +80,34 @@ Permission mode: `--permission-mode plan` (confirms before executing)
 
 ---
 
+## Oracle Security List — Required Port Rules
+
+Before n8n webhooks and external access work, open these ports in the VCN Security List:
+
+| Port | Protocol | Direction | Purpose |
+|---|---|---|---|
+| 22 | TCP | Ingress | SSH access |
+| 80 | TCP | Ingress | HTTP (redirect to HTTPS) |
+| 443 | TCP | Ingress | HTTPS (n8n UI + webhooks) |
+| 5678 | TCP | Ingress | n8n direct access (dev only) |
+| All traffic | Any | Egress | Outbound (already open by default) |
+
+**To open in Oracle Cloud:**
+> OCI Console → Networking → Virtual Cloud Networks → `dddesigns12` → Security Lists → Default Security List → Add Ingress Rules
+
+Also open ports in the VM OS firewall:
+```bash
+sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -I INPUT -p tcp --dport 5678 -j ACCEPT
+sudo iptables-save | sudo tee /etc/iptables/rules.v4
+```
+
+---
+
 ## Pending
 
+- [ ] Open Security List ports (22, 80, 443, 5678) in Oracle VCN
 - [ ] Docker + n8n install on VM
 - [ ] Twingate Connector configured on VM
-- [ ] Ephemeral Public IP assigned to Oracle VNIC
 - [ ] `.mcp.json` updated to point MCP server at VM
+- [ ] Update CLAUDE.md deployment status (VM is now live)
