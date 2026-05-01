@@ -1,0 +1,106 @@
+{
+  "name": "DD 02 — Caption Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyX", "value": 12, "unit": "hours" }] },
+        "authentication": "airtableTokenApi",
+        "baseId": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "tableId": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "triggerField": "Last Modified",
+        "additionalFields": { "formula": "{Content Status} = 'Generate Content'" }
+      },
+      "id": "dd-gen-trigger",
+      "name": "Poll — Generate Content",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract post data from Airtable record\nconst item = $input.first();\nconst fields = item.json.fields || item.json;\n\n// Parse content brief to extract slot if embedded\nconst brief = fields['Content Brief'] || '';\nconst slotMatch = brief.match(/Slot: (morning|evening)/i);\nconst slot = slotMatch ? slotMatch[1] : 'morning';\nconst cleanBrief = brief.replace(/ \\| Slot: (morning|evening)/i, '').trim();\n\nreturn [{\n  json: {\n    recordId: item.json.id || '',\n    title: fields.Title || 'Dorothy Dean Designs Post',\n    pillar: fields.Pillar || '',\n    hookNumber: fields['Hook #'] || '',\n    contentBrief: cleanBrief,\n    videoFormat: fields['Video Format'] || '30-60s Lifestyle/Styling',\n    date: fields.Date || fields['Scheduled Date'] || '',\n    slot\n  }\n}];"
+      },
+      "id": "dd-extract-post",
+      "name": "Extract Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Gemini REST API request body\nconst postData = $input.first().json;\n\nconst systemPrompt = 'You are a content strategist for Dorothy Dean Designs, a faith-based lifestyle apparel brand rooted in Christian values, created for Black women. The brand voice is warm, empowering, sisterly, and rooted in faith — never preachy, always genuine. Captions should feel like they come from a real woman who loves God and loves fashion. Speak directly to the target audience: Black Christian women ages 18-45 who express their faith through their style. Always return valid JSON only.';\n\nconst slotDescription = postData.slot === 'morning'\n  ? 'devotional/inspirational tone — start the day with faith'\n  : 'styling/lifestyle tone — show the product in real life';\n\nconst userPrompt = `Generate 2 social media captions for a Dorothy Dean Designs post.\\n\\nPost Details:\\n- Title: ${postData.title}\\n- Content Pillar: ${postData.pillar}\\n- Hook: ${postData.hookNumber}\\n- Content Brief: ${postData.contentBrief}\\n- Video Format: ${postData.videoFormat}\\n- Posting Slot: ${postData.slot} (${slotDescription})\\n\\nReturn ONLY valid JSON with these exact keys (no markdown, no code blocks):\\n{\\n  \"tiktok\": \"Hook-first caption. Max 150 chars. Punchy, faith-forward, relatable. End with 1-2 hashtags: #DorothyDeanDesigns and one relevant tag like #FaithFashion, #ChristianGirl, or #BlackChristian\",\\n  \"instagram\": \"Warm, sisterly 2-4 sentence caption that feels like a text from a close friend who loves Jesus. Start with a bold question or statement. Weave in faith naturally — not preachy. Close with an engaging question or soft CTA (like 'link in bio'). Include 5-8 hashtags on a new line: #DorothyDeanDesigns #FaithFashion #ChristianApparel #BlackChristian #WearYourFaith and 2-3 relevant trending tags.\"\\n}`;\n\nconst requestBody = {\n  system_instruction: {\n    parts: [{ text: systemPrompt }]\n  },\n  contents: [{\n    role: 'user',\n    parts: [{ text: userPrompt }]\n  }],\n  generationConfig: {\n    maxOutputTokens: 1024,\n    temperature: 0.75\n  }\n};\n\nreturn [{\n  json: {\n    ...postData,\n    geminiRequestBody: requestBody\n  }\n}];"
+      },
+      "id": "dd-build-request",
+      "name": "Build Gemini Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.geminiRequestBody }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-gemini-captions",
+      "name": "Generate Captions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [960, 400],
+      "notes": "CREDENTIAL REQUIRED: Create an HTTP Query Auth credential named 'Gemini API'. Query Param Name: key | Query Param Value: your Google AI Studio API key from aistudio.google.com"
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiOutput = $input.first().json;\nconst postData = $('Extract Post Data').first().json;\n\n// Handle Gemini REST API response format\nlet responseText = '';\nif (geminiOutput.candidates && geminiOutput.candidates[0]) {\n  const candidate = geminiOutput.candidates[0];\n  if (candidate.content && candidate.content.parts && candidate.content.parts[0]) {\n    responseText = candidate.content.parts[0].text || '';\n  }\n} else if (typeof geminiOutput === 'string') {\n  responseText = geminiOutput;\n} else if (geminiOutput.text) {\n  responseText = String(geminiOutput.text);\n} else {\n  responseText = JSON.stringify(geminiOutput);\n}\n\nlet captionsData;\ntry {\n  let jsonMatch = responseText.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/```\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/(\\{[\\s\\S]*\\})/);\n  const jsonString = jsonMatch ? jsonMatch[1].trim() : responseText.trim();\n  captionsData = JSON.parse(jsonString);\n} catch (e) {\n  captionsData = {\n    tiktok: `${postData.title} — wear your faith out loud. #DorothyDeanDesigns #FaithFashion`,\n    instagram: `Faith is your foundation, style is your statement. ✨ ${postData.contentBrief} Every piece from Dorothy Dean Designs is made for the woman who knows whose she is. Which look speaks to your spirit? 👇\\n\\n#DorothyDeanDesigns #FaithFashion #ChristianApparel #BlackChristian #WearYourFaith #ChristianGirl #FaithStyle`\n  };\n}\n\nreturn [{\n  json: {\n    recordId: postData.recordId,\n    tiktokCaption: captionsData.tiktok || '',\n    instagramCaption: captionsData.instagram || ''\n  }\n}];"
+      },
+      "id": "dd-parse-captions",
+      "name": "Parse Captions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "TikTok Caption": "={{ $json.tiktokCaption }}",
+            "Instagram Caption": "={{ $json.instagramCaption }}",
+            "Content Status": "Caption Ready"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true },
+            { "id": "TikTok Caption", "displayName": "TikTok Caption", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "Instagram Caption", "displayName": "Instagram Caption", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Caption Ready", "value": "Caption Ready" }], "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "dd-update-captions",
+      "name": "Save Captions to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1440, 400]
+    }
+  ],
+  "connections": {
+    "Poll — Generate Content": { "main": [[{ "node": "Extract Post Data", "type": "main", "index": 0 }]] },
+    "Extract Post Data": { "main": [[{ "node": "Build Gemini Request", "type": "main", "index": 0 }]] },
+    "Build Gemini Request": { "main": [[{ "node": "Generate Captions", "type": "main", "index": 0 }]] },
+    "Generate Captions": { "main": [[{ "node": "Parse Captions", "type": "main", "index": 0 }]] },
+    "Parse Captions": { "main": [[{ "node": "Save Captions to Airtable", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

@@ -1,0 +1,296 @@
+{
+  "name": "DD 03 — Publisher (9AM + 7PM ET)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 13 * * *" },
+            { "field": "cronExpression", "expression": "0 23 * * *" }
+          ]
+        }
+      },
+      "id": "dd-pub-trigger",
+      "name": "9AM + 7PM ET Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400],
+      "notes": "9AM ET = 13:00 UTC | 7PM ET = 23:00 UTC"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ig-account-id",
+              "name": "instagramBusinessAccountId",
+              "value": "YOUR_INSTAGRAM_BUSINESS_ACCOUNT_ID",
+              "type": "string"
+            },
+            {
+              "id": "ig-access-token",
+              "name": "instagramAccessToken",
+              "value": "YOUR_INSTAGRAM_ACCESS_TOKEN",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd-ig-config",
+      "name": "IG Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 400],
+      "notes": "UPDATE THESE VALUES: Replace with your Instagram Business Account ID and Access Token. This is the only place you need to update credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Determine today's date and expected slot (morning vs evening)\nconst now = new Date();\nconst utcHour = now.getUTCHours();\nconst slot = utcHour < 18 ? 'morning' : 'evening'; // Before 6PM UTC = morning run\n\n// Today in ET (UTC-4)\nconst etOffset = -4;\nconst etNow = new Date(now.getTime() + etOffset * 60 * 60 * 1000);\nconst today = etNow.toISOString().split('T')[0];\n\n// Pass through IG config from previous node\nconst igConfig = $input.first().json;\n\nreturn [{\n  json: {\n    today,\n    slot,\n    runTime: now.toISOString(),\n    etHour: utcHour + etOffset,\n    instagramBusinessAccountId: igConfig.instagramBusinessAccountId,\n    instagramAccessToken: igConfig.instagramAccessToken\n  }\n}];"
+      },
+      "id": "dd-set-today",
+      "name": "Set Today + Slot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "filterByFormula": "=AND({Content Status} = 'Ready to Post', IS_SAME({Scheduled Date}, DATETIME_PARSE('{{ $json.today }}', 'YYYY-MM-DD'), 'day'))",
+        "options": {}
+      },
+      "id": "dd-query-ready",
+      "name": "Query Ready to Post",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{
+            "id": "has-posts",
+            "leftValue": "={{ $json.id }}",
+            "rightValue": "",
+            "operator": { "type": "string", "operation": "notEmpty" }
+          }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dd-has-posts",
+      "name": "Any Posts Today?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [{
+            "id": "no-posts",
+            "name": "message",
+            "value": "No DD posts ready for today. Check Airtable — set status to Ready to Post to queue content.",
+            "type": "string"
+          }]
+        },
+        "options": {}
+      },
+      "id": "dd-no-posts",
+      "name": "No Posts — Skip",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare post data from Airtable record\nconst items = $input.all();\nconst igConfig = $('Set Today + Slot').first().json;\nconst results = [];\n\nfor (const item of items) {\n  const fields = item.json.fields || item.json;\n  \n  // Extract slot from content brief if available\n  const brief = fields['Content Brief'] || '';\n  const slotMatch = brief.match(/Slot: (morning|evening)/i);\n  const slot = slotMatch ? slotMatch[1] : 'any';\n  \n  results.push({\n    json: {\n      recordId: item.json.id,\n      title: fields.Title || 'Dorothy Dean Designs',\n      tiktokCaption: fields['TikTok Caption'] || '',\n      instagramCaption: fields['Instagram Caption'] || '',\n      mediaUrl: fields['Media URL'] || '',\n      pillar: fields.Pillar || '',\n      slot,\n      instagramBusinessAccountId: igConfig.instagramBusinessAccountId,\n      instagramAccessToken: igConfig.instagramAccessToken\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "dd-prepare-posts",
+      "name": "Prepare Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{
+            "id": "has-media",
+            "leftValue": "={{ $json.mediaUrl }}",
+            "rightValue": "",
+            "operator": { "type": "string", "operation": "notEmpty" }
+          }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dd-has-media",
+      "name": "Has Media URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [{
+            "id": "no-media-flag",
+            "name": "skipReason",
+            "value": "=No media URL for DD record {{ $json.recordId }} — skipping publish, flagging needs-media.",
+            "type": "string"
+          }, {
+            "id": "no-media-id",
+            "name": "recordId",
+            "value": "={{ $json.recordId }}",
+            "type": "string"
+          }]
+        },
+        "options": {}
+      },
+      "id": "dd-no-media",
+      "name": "Flag — No Media",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1680, 580]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/content/init/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json; charset=UTF-8" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.title, description: $json.tiktokCaption, disable_duet: false, disable_comment: false, disable_stitch: false, privacy_level: 'PUBLIC_TO_EVERYONE' }, source_info: { source: 'PULL_FROM_URL', photo_images: [$json.mediaUrl] }, post_mode: 'DIRECT_POST', media_type: 'PHOTO' }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-tiktok-post",
+      "name": "Post to TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1680, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v19.0/' + $json.instagramBusinessAccountId + '/media' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ image_url: $json.mediaUrl, caption: $json.instagramCaption, access_token: $json.instagramAccessToken }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-ig-create-container",
+      "name": "Instagram — Create Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1680, 400],
+      "notes": "Step 1 of 2: Create media container. Returns creation_id needed for publish step."
+    },
+    {
+      "parameters": {
+        "jsCode": "const containerResult = $input.first().json;\nconst postData = $('Prepare Post Data').item.json;\n\nconst creationId = containerResult.id || null;\n\nreturn [{\n  json: {\n    recordId: postData.recordId,\n    creationId,\n    mediaUrl: postData.mediaUrl,\n    instagramCaption: postData.instagramCaption,\n    containerOk: !!creationId\n  }\n}];"
+      },
+      "id": "dd-ig-prep-publish",
+      "name": "Prep IG Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v19.0/' + $('Prepare Post Data').item.json.instagramBusinessAccountId + '/media_publish' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ creation_id: $json.creationId, access_token: $('Prepare Post Data').item.json.instagramAccessToken }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-ig-publish",
+      "name": "Instagram — Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2160, 400],
+      "notes": "Step 2 of 2: Publish the container using creation_id from previous step."
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepareData = $('Prepare Post Data').first().json;\nconst tiktokResult = $('Post to TikTok').first()?.json || {};\nconst igPublishResult = $('Instagram — Publish').first()?.json || {};\n\nconst tiktokOk = !!(tiktokResult.data?.publish_id);\nconst igOk = !!(igPublishResult.id);\n\nreturn [{\n  json: {\n    recordId: prepareData.recordId,\n    tiktokStatus: tiktokOk ? 'success' : 'failed',\n    instagramStatus: igOk ? 'success' : 'failed',\n    tiktokPublishId: tiktokResult.data?.publish_id || null,\n    instagramPostId: igPublishResult.id || null,\n    postedAt: new Date().toISOString(),\n    anySuccess: tiktokOk || igOk\n  }\n}];"
+      },
+      "id": "dd-collect-results",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 320]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "Content Status": "Posted",
+            "Notes": "=Posted {{ $json.postedAt }}. TikTok: {{ $json.tiktokStatus }} | Instagram: {{ $json.instagramStatus }}"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Posted", "value": "Posted" }], "readOnly": false },
+            { "id": "Notes", "displayName": "Notes", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "dd-mark-posted",
+      "name": "Mark as Posted",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [2640, 320]
+    }
+  ],
+  "connections": {
+    "9AM + 7PM ET Daily": { "main": [[{ "node": "IG Config", "type": "main", "index": 0 }]] },
+    "IG Config": { "main": [[{ "node": "Set Today + Slot", "type": "main", "index": 0 }]] },
+    "Set Today + Slot": { "main": [[{ "node": "Query Ready to Post", "type": "main", "index": 0 }]] },
+    "Query Ready to Post": { "main": [[{ "node": "Any Posts Today?", "type": "main", "index": 0 }]] },
+    "Any Posts Today?": {
+      "main": [
+        [{ "node": "Prepare Post Data", "type": "main", "index": 0 }],
+        [{ "node": "No Posts — Skip", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Post Data": { "main": [[{ "node": "Has Media URL?", "type": "main", "index": 0 }]] },
+    "Has Media URL?": {
+      "main": [
+        [
+          { "node": "Post to TikTok", "type": "main", "index": 0 },
+          { "node": "Instagram — Create Container", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Flag — No Media", "type": "main", "index": 0 }]
+      ]
+    },
+    "Instagram — Create Container": { "main": [[{ "node": "Prep IG Publish", "type": "main", "index": 0 }]] },
+    "Prep IG Publish": { "main": [[{ "node": "Instagram — Publish", "type": "main", "index": 0 }]] },
+    "Post to TikTok": { "main": [[{ "node": "Collect Results", "type": "main", "index": 0 }]] },
+    "Instagram — Publish": { "main": [[{ "node": "Collect Results", "type": "main", "index": 0 }]] },
+    "Collect Results": { "main": [[{ "node": "Mark as Posted", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}
