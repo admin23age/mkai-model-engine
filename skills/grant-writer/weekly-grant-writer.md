@@ -20,7 +20,7 @@ If the fetch fails, STOP the run and report the error. Do not proceed without th
 
 For additional context, you may also fetch (same method, different paths):
 - context/mkai-grant-profile.md (full business profile)
-- context/sop-grant-writing.md (full SOP)
+- sop/grant-writing.md (full SOP)
 
 GitHub repo: admin23age/mkai-model-engine (private, branch: master)
 Auth token: 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

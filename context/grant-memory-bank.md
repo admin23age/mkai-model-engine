@@ -128,7 +128,7 @@ MKAI does **not** currently hold 501(c)(3) status. Skip grants that require nonp
 |---|---|
 | This memory bank | `context/grant-memory-bank.md` |
 | Grant profile | `context/mkai-grant-profile.md` |
-| Grant SOP | `context/sop-grant-writing.md` |
+| Grant SOP | `sop/grant-writing.md` |
 | Agent spec | `skills/grant-writer/agent.md` |
 | Prompt library | `skills/grant-writer/prompt-library.md` |
 | n8n workflow | `automations/grants/grant-writer-workflow.json` |

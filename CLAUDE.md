@@ -19,11 +19,12 @@ Dorothy Dean Designs uses this engine to run sales, fulfillment, content, and op
 │       ├── prime.md             # /prime — load context and assess readiness
 │       ├── create-plan.md       # /create-plan — generate a dated plan file
 │       └── implement.md         # /implement — execute a plan file step by step
-├── context/                     # Live context files: client briefs, SOPs, brand docs
+├── context/                     # Live context files: client briefs, brand docs, memory banks
+├── sop/                         # Standard Operating Procedures (training & reference)
 ├── plans/                       # Dated implementation plans (YYYY-MM-DD_name.md)
 ├── outputs/                     # Deliverables: copy, configs, reports, exports
 ├── reference/                   # Static reference: schemas, API docs, field maps
-├── scripts/                     # Automation scripts: n8n helpers, data transforms
+├── scripts/                     # Automation scripts: skill sync, n8n helpers, data transforms
 └── skills/
     ├── social-rebuilder/        # Skill: rebuild/generate social content from brand voice
     ├── brand-scanner/           # Skill: audit brand consistency across assets
