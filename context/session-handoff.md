@@ -1,94 +1,117 @@
 # MKAI Session Handoff
-*Capsized: 2026-04-11*
+*Capsized: 2026-05-08*
 
 ## What Was Accomplished This Session
 
-### 1. Git Repository Initialized & Pushed
-- Repo created at `C:/Users/immav/Projects/model-engine/`
-- All MKAI workspace files moved in: `context/`, `outputs/`, `reference/`, `scripts/`, `skills/`
-- `.gitignore` created (covers OS, secrets, runtime artifacts)
-- Pushed to GitHub: `https://github.com/admin23age/mkai-model-engine` (private)
+### 1. Git Repository — Fully Operational
+- Repo: `https://github.com/admin23age/mkai-model-engine` (private)
+- Local: `C:/Users/immav/Projects/model-engine/`
+- `.claude/commands/` in repo — `/prime`, `/create-plan`, `/implement`, `/grant-writer`
+- Home `C:/Users/immav/CLAUDE.md` redirects to repo
 
-### 2. Agent Division of Labor Established
-- `CLAUDE.md` — Foundational Engineer (architecture, code, plans, system design)
-- `GEMINI.md` — Operations Agent (workflows, data sync, reporting, automation)
-- Both files live in repo root and on the VM
+### 2. Agent Division of Labor — Locked
+- `CLAUDE.md` → Foundational Engineer (architecture, code, plans)
+- `GEMINI.md` → Operations Agent (workflows, data sync, reporting)
+- Both files in repo root and on Oracle VM
 
-### 3. Claude Slash Commands in Repo
-- `.claude/commands/` added to repo — commands travel with the codebase
-- Available: `/prime`, `/create-plan`, `/implement`, `/grant-writer`
-
-### 4. Home Directory Redirect
-- `C:/Users/immav/CLAUDE.md` updated to redirect both CLIs to the repo
-
-### 5. Oracle VM — LIVE (us-phoenix-1)
+### 3. Oracle VM — Live (us-phoenix-1)
 - **Public IP:** `129.151.26.21`
 - **Private IP:** `10.0.0.159`
 - **Compartment:** `dddesigns12` (root)
 - **VCN CIDR:** `10.0.0.0/16`
-- **SSH Key:** `claude-bunker` added to GitHub
-- **Stack confirmed:**
-  - Claude Code v2.1.101 ✅ authenticated
-  - Gemini CLI 0.37.1 ✅ running
-  - Node.js v20 ✅
-  - PM2 ✅ (MCP server)
-  - Git ✅
-  - Repo cloned at `/root/mkai-model-engine/`
-  - Cron auto-pull every 15 min ✅
-- `/root/.gemini/` created with `GEMINI.md` system constitution
-- `/root/.claude/settings.json` configured (plan mode, no curl/wget)
+- **Twingate Tenant:** `mychitchat126.twingate.com`
+
+**Confirmed stack on VM:**
+| Tool | Version | Status |
+|---|---|---|
+| Claude Code | v2.1.101 | ✅ Authenticated |
+| Gemini CLI | 0.37.1 | ✅ Running |
+| Node.js | v20.x | ✅ |
+| PM2 | latest | ✅ MCP server running |
+| Git | latest | ✅ Repo cloned at `/root/mkai-model-engine/` |
+| Cron auto-pull | */15 * * * * | ✅ |
+
+**Claude Code config on VM:**
+- Path: `/root/.claude/settings.json`
+- Mode: `--permission-mode plan`
+- Denied: WebFetch, WebSearch, Bash(curl *), Bash(wget *)
+
+**Gemini config on VM:**
+- `/root/.gemini/` created ✅
+- `/root/.gemini/GEMINI.md` system constitution ✅
+
+### 4. Oracle Security List — Ports Open
+| Port | Purpose | Status |
+|---|---|---|
+| 22 | SSH | ✅ Open |
+| 80 | HTTP | ✅ Open |
+| 443 | HTTPS / Webhooks | ✅ Open |
+| 5678 | n8n UI | ✅ Open (lock to Twingate CIDR after connector deployed) |
 
 ---
 
 ## Remaining — Next Session Priorities
 
-### Priority 1 — Open Oracle Security List Ports
-> OCI Console → Networking → VCN dddesigns12 → Security Lists → Add Ingress Rules
-
-| Port | Purpose |
-|---|---|
-| 22 | SSH |
-| 80 | HTTP |
-| 443 | HTTPS / webhooks |
-| 5678 | n8n UI |
-
-Also run on VM after ports open:
+### Priority 1 — OS Firewall (iptables) on VM ⬅ IMMEDIATE
+Not yet confirmed. Run on VM:
 ```bash
+sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
 sudo iptables -I INPUT -p tcp --dport 5678 -j ACCEPT
 sudo iptables-save | sudo tee /etc/iptables/rules.v4
 ```
-
-### Priority 2 — Docker + n8n on VM
+Verify:
 ```bash
-# Install Docker
+sudo iptables -L INPUT --line-numbers | grep -E "80|443|5678"
+```
+
+### Priority 2 — Twingate Connector on VM
+Twingate client is on Windows (`mychitchat126.twingate.com`) but **connector is NOT deployed on the VM yet.**
+
+**Steps:**
+1. Twingate Admin → Remote Networks → Add Network → `oracle-vm-phoenix`
+2. Connectors → Deploy Connector → copy token
+3. On VM:
+```bash
+curl -s https://binaries.twingate.com/connector/setup.sh | sudo bash
+sudo twingate-connector setup --token YOUR_TOKEN_HERE
+sudo systemctl enable twingate-connector
+sudo systemctl start twingate-connector
+```
+4. Add Resource: `10.0.0.159`
+5. After connector live → lock OCI Security List port 5678 source to Twingate CIDR (remove `0.0.0.0/0`)
+
+### Priority 3 — Docker + n8n on VM
+```bash
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER
-
-# Run n8n via Docker
 docker run -d --restart unless-stopped \
   --name n8n \
   -p 5678:5678 \
   -v ~/.n8n:/home/node/.n8n \
   n8nio/n8n
 ```
+Verify: `docker ps | grep n8n`
+Access: `http://10.0.0.159:5678` via Twingate
 
-### Priority 3 — Twingate Connector on VM
-- Install Twingate Connector so the VM joins the private network as a node
-- Allows Claude/Gemini on VM to be accessed securely without public exposure
+### Priority 4 — AGE-core-infrastructure Repo Migration
+- Review: `context/`, `Claude` file, Docker/Nginx configs
+- Migrate useful infra configs → `mkai-model-engine/reference/` or new `infra/`
+- Then delete `AGE-core-infrastructure` repo
 
-### Priority 4 — AGE-core-infrastructure Repo
-- Review and migrate: `context/`, `Claude` file, Docker/Nginx configs
-- Target: move useful infra configs into `mkai-model-engine/reference/` or new `infra/` folder
-- Then delete the old repo
+### Priority 5 — n8n Workflow Credentials & Imports
+From `dd-automation-status.md`:
+- Import: `DD_Personalized_Outreach.json`, `DD_Content_Repurposing.json` (JSONs in `outputs/`)
+- Connect: Twilio (Text Support), Calendly (Appointment Setting)
+- Connect: Gmail OAuth2, Google Calendar OAuth2, Airtable token, Gemini API
+- Confirm: Zoho Flow webhook URL for workflow #12
 
-### Priority 5 — MCP Config on VM
+### Priority 6 — MCP Config Update
 - Update `.mcp.json` to point MCP server at VM once n8n is live
 
 ---
 
-## Daily Workflow (From Now On)
-
+## Daily Workflow
 ```bash
 # Windows (dev/engineer)
 cd C:/Users/immav/Projects/model-engine
@@ -102,6 +125,7 @@ gemini                          # Gemini as ops agent
 
 ## Key Reference Files
 - `reference/vm-stack-status.md` — full VM state
-- `reference/vm-gemini-install.md` — original VM setup guide
+- `reference/vm-gemini-install.md` — VM setup guide
+- `context/dd-automation-status.md` — n8n workflow tracker
 - `GEMINI.md` — Gemini ops constitution
 - `CLAUDE.md` — Claude engineer constitution
