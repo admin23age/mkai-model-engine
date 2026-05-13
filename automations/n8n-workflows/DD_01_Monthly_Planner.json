@@ -1,0 +1,189 @@
+{
+  "name": "DD 01 — Monthly Content Planner",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 11 1 * *" }]
+        }
+      },
+      "id": "dd-schedule-trigger",
+      "name": "1st of Month — 7AM ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst year = now.getFullYear();\nconst month = now.getMonth();\n\nconst startDate = new Date(year, month + 1, 1);\nconst endDate = new Date(year, month + 2, 0);\n\nconst formatDate = (d) => d.toISOString().split('T')[0];\n\nconst dates = [];\nconst cursor = new Date(startDate);\nwhile (cursor <= endDate) {\n  dates.push(formatDate(new Date(cursor)));\n  cursor.setDate(cursor.getDate() + 1);\n}\n\n// Faith apparel Instagram competitors to scrape\nconst competitors = [\n  'elevatedfaith',\n  'walkinfaith_apparel',\n  'godisdope',\n  'crownsforchrist',\n  'blessedco'\n];\n\nreturn [{\n  json: {\n    startDate: formatDate(startDate),\n    endDate: formatDate(endDate),\n    monthLabel: startDate.toLocaleString('default', { month: 'long', year: 'numeric' }),\n    totalDays: dates.length,\n    totalPosts: dates.length * 2,\n    dates,\n    competitors,\n    planningTimestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "dd-set-window",
+      "name": "Set Planning Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~instagram-scraper/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ usernames: $json.competitors, resultsLimit: 50, scrapeType: 'posts' }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-apify-start",
+      "name": "Start Instagram Competitor Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [720, 400],
+      "notes": "Uses Apify instagram-scraper. Credential: httpQueryAuth, param name 'token', value = Apify API token"
+    },
+    {
+      "parameters": {
+        "jsCode": "const runData = $input.first().json;\nconst planningData = $('Set Planning Window').first().json;\n\nreturn [{\n  json: {\n    ...planningData,\n    apifyRunId: runData.data?.id || runData.id || null,\n    apifyStatus: runData.data?.status || 'RUNNING'\n  }\n}];"
+      },
+      "id": "dd-store-run",
+      "name": "Store Run ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "minutes"
+      },
+      "id": "dd-wait",
+      "name": "Wait 4 Min for Scrape",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1200, 400],
+      "webhookId": "dd-wait-hook"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.apifyRunId }}/dataset/items?limit=300",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-apify-results",
+      "name": "Fetch Scrape Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawResults = $input.all();\nconst planningData = $('Store Run ID').first().json;\n\nlet allPosts = [];\nfor (const item of rawResults) {\n  if (Array.isArray(item.json)) allPosts = allPosts.concat(item.json);\n  else if (item.json && typeof item.json === 'object') allPosts.push(item.json);\n}\n\nconst scoredPosts = allPosts\n  .filter(p => (p.likesCount || p.likes || 0) > 100)\n  .map(p => {\n    const likes = p.likesCount || p.likes || 0;\n    const comments = p.commentsCount || p.comments || 0;\n    const caption = (p.caption || p.text || '').substring(0, 200);\n    const handle = p.ownerUsername || p.username || 'unknown';\n    return { handle, caption, likes, comments, hashtags: (p.hashtags || []).slice(0, 5).join(', ') };\n  })\n  .sort((a, b) => b.likes - a.likes);\n\nconst top20 = scoredPosts.slice(0, 20);\n\nconst topPostsSummary = top20.map((p, i) =>\n  `${i + 1}. @${p.handle}: \"${p.caption}\" | ${p.likes.toLocaleString()} likes | Tags: ${p.hashtags}`\n).join('\\n');\n\nreturn [{\n  json: {\n    ...planningData,\n    topPostsSummary: topPostsSummary || 'No competitor data — use general faith apparel and lifestyle trends',\n    totalPostsAnalyzed: allPosts.length,\n    topEngagedPosts: top20.slice(0, 5).map(p => p.caption.substring(0, 100))\n  }\n}];"
+      },
+      "id": "dd-analyze-competitors",
+      "name": "Analyze Competitor Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "dd-trends-fetch",
+      "name": "Fetch Trending Topics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1920, 240],
+      "notes": "Reusing HN for general trend signals. Fashion/faith trends are embedded in the Gemini prompt."
+    },
+    {
+      "parameters": {
+        "jsCode": "const competitorData = $('Analyze Competitor Data').first().json;\n\n// Faith lifestyle apparel trend context (evergreen + seasonal)\nconst faithTrends = [\n  'Spring collection drops — light fabrics, pastel faith graphics',\n  'Easter/Resurrection Sunday outfits — high search volume',\n  'OOTD reels with scripture overlays performing well',\n  'Behind-the-scenes small business content driving community',\n  'Matching sets with faith messages trending on TikTok',\n  'Customer testimony posts — authentic UGC driving conversions',\n  'Limited edition drops creating urgency and FOMO',\n  'Everyday faith wear — normalizing faith in casual styling'\n];\n\nconst month = new Date().getMonth();\nconst seasonalContext = month >= 2 && month <= 4 ? 'Spring/Easter season — emphasize renewal, fresh starts, resurrection themes' :\n  month >= 5 && month <= 7 ? 'Summer season — outdoor events, vacations, beach faith wear' :\n  month >= 8 && month <= 10 ? 'Fall season — back to school, harvest, gratitude themes' :\n  'Holiday season — Christmas, gift giving, family gatherings';\n\nreturn [{\n  json: {\n    ...competitorData,\n    trendingTopics: faithTrends.join('\\n'),\n    seasonalContext\n  }\n}];"
+      },
+      "id": "dd-aggregate-trends",
+      "name": "Aggregate Trend Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 400]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "models/gemini-2.5-pro", "mode": "id" },
+        "messages": {
+          "values": [{
+            "role": "user",
+            "content": "=You are a social media content strategist for Dorothy Dean Designs, a Black-owned, female-owned faith-based lifestyle apparel brand based in Raleigh, NC. The target audience is Black women of faith who want to express their beliefs through fashion.\n\nCOMPETITOR ANALYSIS — Top Instagram posts from last 30 days:\n{{ $json.topPostsSummary }}\n\nTRENDING TOPICS THIS MONTH:\n{{ $json.trendingTopics }}\n\nSEASONAL CONTEXT:\n{{ $json.seasonalContext }}\n\nCONTENT PILLARS (use all, keep variety):\n1. Product Showcase — Show specific item, styling tips, why it speaks to them\n2. Faith + Fashion — How faith intersects with personal style and confidence\n3. Community & Culture — Celebrate Black women, sisterhood, shared values\n4. Behind the Brand — Small business story, founder moments, manufacturing\n5. Customer Love — Testimonials, UGC, reviews, transformation stories\n6. Styling Guide — How to wear it, what to pair it with, occasion tips\n\nMONTH TO PLAN: {{ $json.monthLabel }}\nSTART DATE: {{ $json.startDate }}\nTOTAL POSTS NEEDED: {{ $json.totalPosts }} (2 per day × {{ $json.totalDays }} days)\n\nRULES:\n- Morning posts (slot: 'morning'): Inspirational, faith-forward, community-building\n- Evening posts (slot: 'evening'): Product-focused, styling, shopping intent\n- Tone: Warm, empowering, sisterly, confident, rooted in faith\n- Mix scripture references naturally — don't force it every post\n- Include specific product ideas (graphic tees, hoodies, accessories with faith messages)\n- Captions should feel like they're from a friend, not a brand\n\nReturn ONLY a valid JSON array of exactly {{ $json.totalPosts }} objects. No markdown. Each object:\n{\n  \"date\": \"YYYY-MM-DD\",\n  \"slot\": \"morning\" or \"evening\",\n  \"pillar\": \"Pillar X - [Name]\",\n  \"title\": \"Specific post title or theme\",\n  \"content_brief\": \"2-3 sentences: what to show, what to say, what CTA\",\n  \"video_format\": \"Reel 15-30s\" or \"Reel 30-60s\" or \"Carousel\" or \"Single Image\",\n  \"trending_angle\": \"Which trend or seasonal moment this connects to\"\n}"
+          }]
+        },
+        "options": {
+          "systemMessage": "You are a content strategist for Dorothy Dean Designs, a faith-based lifestyle apparel brand for Black women. Brand voice: warm, empowering, sisterly, rooted in faith, confident. Never preachy. Celebrate Black women and their relationship with faith and fashion. Always return valid JSON only.",
+          "maxOutputTokens": 8192,
+          "temperature": 0.8
+        }
+      },
+      "id": "dd-gemini-calendar",
+      "name": "Generate 30-Day Calendar",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [2400, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiOutput = $input.first().json;\nconst planningData = $('Aggregate Trend Data').first().json;\n\nlet responseText = '';\nif (typeof geminiOutput === 'string') responseText = geminiOutput;\nelse if (geminiOutput.response) responseText = String(geminiOutput.response);\nelse if (geminiOutput.text) responseText = String(geminiOutput.text);\nelse if (geminiOutput.content) responseText = String(geminiOutput.content);\nelse if (geminiOutput.output) responseText = String(geminiOutput.output);\nelse responseText = JSON.stringify(geminiOutput);\n\nlet calendar;\ntry {\n  let jsonMatch = responseText.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/```\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/(\\[[\\s\\S]*\\])/);\n  const jsonString = jsonMatch ? jsonMatch[1].trim() : responseText.trim();\n  calendar = JSON.parse(jsonString);\n  if (!Array.isArray(calendar)) throw new Error('Not an array');\n} catch (e) {\n  calendar = planningData.dates.flatMap(date => [\n    { date, slot: 'morning', pillar: 'Pillar 2 - Faith + Fashion', title: 'Faith Style Inspiration ' + date, content_brief: 'Share how faith and fashion intersect for the modern woman.', video_format: 'Reel 30-60s', trending_angle: 'Faith lifestyle' },\n    { date, slot: 'evening', pillar: 'Pillar 1 - Product Showcase', title: 'Product Feature ' + date, content_brief: 'Showcase a Dorothy Dean Designs piece with styling tips.', video_format: 'Single Image', trending_angle: 'Fashion OOTD' }\n  ]);\n}\n\nconst enrichedCalendar = calendar.map((post, idx) => ({\n  ...post,\n  post_index: idx + 1,\n  month_label: planningData.monthLabel,\n  brand: 'Dorothy Dean Designs',\n  status: 'Generate Content',\n  created_by: 'DD Monthly Planner'\n}));\n\nreturn enrichedCalendar.map(post => ({ json: post }));"
+      },
+      "id": "dd-parse-calendar",
+      "name": "Parse Calendar JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $json.title }}",
+            "Content Status": "Generate Content",
+            "Scheduled Date": "={{ $json.date }}",
+            "Caption": "={{ $json.content_brief + ' | Slot: ' + $json.slot + ' | Trend: ' + $json.trending_angle }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "Title", "displayName": "Title", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "readOnly": false },
+            { "id": "Scheduled Date", "displayName": "Scheduled Date", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "dateTime", "readOnly": false },
+            { "id": "Caption", "displayName": "Caption", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "dd-create-records",
+      "name": "Create Airtable Records",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [2880, 400]
+    }
+  ],
+  "connections": {
+    "1st of Month — 7AM ET": { "main": [[{ "node": "Set Planning Window", "type": "main", "index": 0 }]] },
+    "Set Planning Window": { "main": [[{ "node": "Start Instagram Competitor Scrape", "type": "main", "index": 0 }]] },
+    "Start Instagram Competitor Scrape": { "main": [[{ "node": "Store Run ID", "type": "main", "index": 0 }]] },
+    "Store Run ID": { "main": [[{ "node": "Wait 4 Min for Scrape", "type": "main", "index": 0 }]] },
+    "Wait 4 Min for Scrape": { "main": [[{ "node": "Fetch Scrape Results", "type": "main", "index": 0 }]] },
+    "Fetch Scrape Results": { "main": [[{ "node": "Analyze Competitor Data", "type": "main", "index": 0 }]] },
+    "Analyze Competitor Data": { "main": [[{ "node": "Fetch Trending Topics", "type": "main", "index": 0 }, { "node": "Aggregate Trend Data", "type": "main", "index": 0 }]] },
+    "Fetch Trending Topics": { "main": [[{ "node": "Aggregate Trend Data", "type": "main", "index": 0 }]] },
+    "Aggregate Trend Data": { "main": [[{ "node": "Generate 30-Day Calendar", "type": "main", "index": 0 }]] },
+    "Generate 30-Day Calendar": { "main": [[{ "node": "Parse Calendar JSON", "type": "main", "index": 0 }]] },
+    "Parse Calendar JSON": { "main": [[{ "node": "Create Airtable Records", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

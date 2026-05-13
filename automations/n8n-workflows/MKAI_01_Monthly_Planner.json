@@ -1,0 +1,236 @@
+{
+  "name": "MKAI 01 — Monthly Content Planner",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 11 1 * *" }]
+        }
+      },
+      "id": "mkai-schedule-trigger",
+      "name": "1st of Month — 7AM ET",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400],
+      "notes": "Runs at 11:00 UTC = 7:00 AM ET on the 1st of every month"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate planning window for the coming month\nconst now = new Date();\nconst year = now.getFullYear();\nconst month = now.getMonth(); // 0-indexed, so this is current month\n\n// Start = 1st of next month (or today if testing)\nconst startDate = new Date(year, month + 1, 1);\nconst endDate = new Date(year, month + 2, 0); // Last day of next month\n\nconst formatDate = (d) => d.toISOString().split('T')[0];\n\n// Build list of all dates in the month\nconst dates = [];\nconst cursor = new Date(startDate);\nwhile (cursor <= endDate) {\n  dates.push(formatDate(new Date(cursor)));\n  cursor.setDate(cursor.getDate() + 1);\n}\n\n// Competitor TikTok handles to scrape\nconst competitors = [\n  'rowancheung',\n  'itsaria.ai',\n  'learnaiwithkaylee',\n  'aiwiththeus',\n  'letscyber',\n  'zeenatautomation'\n];\n\nreturn [{\n  json: {\n    startDate: formatDate(startDate),\n    endDate: formatDate(endDate),\n    monthLabel: startDate.toLocaleString('default', { month: 'long', year: 'numeric' }),\n    totalDays: dates.length,\n    totalPosts: dates.length * 2,\n    dates,\n    competitors,\n    planningTimestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "mkai-set-window",
+      "name": "Set Planning Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ profiles: $json.competitors, resultsLimit: 50, scrapeType: 'user', shouldDownloadCovers: false, shouldDownloadVideos: false }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "mkai-apify-start",
+      "name": "Start TikTok Competitor Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [720, 400],
+      "notes": "Kicks off Apify TikTok scraper. Credential: httpQueryAuth with token param = your Apify API token"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store the Apify run ID for polling\nconst runData = $input.first().json;\nconst planningData = $('Set Planning Window').first().json;\n\nreturn [{\n  json: {\n    ...planningData,\n    apifyRunId: runData.data?.id || runData.id || null,\n    apifyStatus: runData.data?.status || 'RUNNING'\n  }\n}];"
+      },
+      "id": "mkai-store-run",
+      "name": "Store Run ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "id": "mkai-wait",
+      "name": "Wait 3 Min for Scrape",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1200, 400],
+      "webhookId": "mkai-wait-hook"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $json.apifyRunId }}/dataset/items?limit=300",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "mkai-apify-results",
+      "name": "Fetch Scrape Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process competitor TikTok data — extract top performers\nconst rawResults = $input.all();\nconst planningData = $('Store Run ID').first().json;\n\n// Flatten all posts from the response\nlet allPosts = [];\nfor (const item of rawResults) {\n  if (Array.isArray(item.json)) {\n    allPosts = allPosts.concat(item.json);\n  } else if (item.json && typeof item.json === 'object') {\n    allPosts.push(item.json);\n  }\n}\n\n// Calculate save rate and engagement for each post\nconst scoredPosts = allPosts\n  .filter(p => p.playCount > 1000) // Filter out low-view posts\n  .map(p => {\n    const plays = p.playCount || p.stats?.playCount || 0;\n    const likes = p.diggCount || p.stats?.diggCount || 0;\n    const saves = p.collectCount || p.stats?.collectCount || 0;\n    const comments = p.commentCount || p.stats?.commentCount || 0;\n    const shares = p.shareCount || p.stats?.shareCount || 0;\n    const saveRate = plays > 0 ? ((saves / plays) * 100).toFixed(2) : 0;\n    const engagementRate = plays > 0 ? (((likes + saves + comments + shares) / plays) * 100).toFixed(2) : 0;\n    \n    return {\n      handle: p.authorMeta?.name || p.author?.uniqueId || 'unknown',\n      desc: (p.desc || p.text || '').substring(0, 200),\n      plays,\n      likes,\n      saves,\n      saveRate: parseFloat(saveRate),\n      engagementRate: parseFloat(engagementRate),\n      duration: p.videoMeta?.duration || p.video?.duration || 0,\n      hashtags: (p.hashtags || []).map(h => h.name || h).slice(0, 5).join(', ')\n    };\n  })\n  .sort((a, b) => b.saveRate - a.saveRate);\n\n// Top 20 posts by save rate\nconst top20 = scoredPosts.slice(0, 20);\n\n// Identify patterns\nconst avgSaveRate = top20.length > 0\n  ? (top20.reduce((s, p) => s + p.saveRate, 0) / top20.length).toFixed(2)\n  : 0;\n\nconst viralPosts = scoredPosts.filter(p => p.saveRate >= 3);\n\n// Summarize for Gemini\nconst topPostsSummary = top20.map((p, i) =>\n  `${i + 1}. @${p.handle}: \"${p.desc}\" | ${p.plays.toLocaleString()} views | ${p.saveRate}% save rate | ${p.duration}s | Tags: ${p.hashtags}`\n).join('\\n');\n\nreturn [{\n  json: {\n    ...planningData,\n    topPostsSummary: topPostsSummary || 'No competitor data available — use general AI consulting trends',\n    totalPostsAnalyzed: allPosts.length,\n    viralPostCount: viralPosts.length,\n    avgSaveRate,\n    topHooks: top20.slice(0, 5).map(p => p.desc.substring(0, 100))\n  }\n}];"
+      },
+      "id": "mkai-analyze-competitors",
+      "name": "Analyze Competitor Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 400]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "mkai-hn-ids",
+      "name": "Fetch HN Top Story IDs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1920, 240],
+      "notes": "Hacker News API — free, no auth required. Gets top AI/tech stories for trend detection."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch top 10 HN stories for AI trend context\nconst ids = $input.first().json;\nconst top10 = Array.isArray(ids) ? ids.slice(0, 10) : [];\n\n// Return the IDs to be fetched individually\nreturn top10.map(id => ({ json: { storyId: id } }));"
+      },
+      "id": "mkai-hn-split",
+      "name": "Prep Story IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 240]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://hacker-news.firebaseio.com/v0/item/{{ $json.storyId }}.json",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "mkai-hn-story",
+      "name": "Fetch HN Story Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2400, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all trend signals into a summary for Gemini\nconst competitorData = $('Analyze Competitor Data').first().json;\nconst hnStories = $input.all();\n\n// Filter for AI-relevant HN stories\nconst aiKeywords = ['ai', 'llm', 'gpt', 'claude', 'gemini', 'automation', 'machine learning', 'agent', 'openai', 'anthropic', 'ml', 'artificial intelligence', 'robotics', 'chatbot'];\n\nconst relevantStories = hnStories\n  .filter(item => {\n    const title = (item.json.title || '').toLowerCase();\n    return aiKeywords.some(kw => title.includes(kw));\n  })\n  .map(item => item.json.title)\n  .filter(Boolean)\n  .slice(0, 10);\n\nconst trendingTopics = relevantStories.length > 0\n  ? relevantStories.join('\\n')\n  : 'AI agents, workflow automation, prompt engineering, AI for small business, no-code AI tools, AI ROI measurement';\n\nreturn [{\n  json: {\n    ...competitorData,\n    trendingTopics\n  }\n}];"
+      },
+      "id": "mkai-aggregate-trends",
+      "name": "Aggregate Trend Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 400]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "models/gemini-2.5-pro", "mode": "id" },
+        "messages": {
+          "values": [{
+            "role": "user",
+            "content": "=You are a social media content strategist for Mankind AI, an AI consulting firm targeting business owners and professionals who want AI to work for them.\n\nCOMPETITOR ANALYSIS — Top TikTok posts from last 30 days:\n{{ $json.topPostsSummary }}\n\nTRENDING AI TOPICS THIS MONTH:\n{{ $json.trendingTopics }}\n\nCONTENT PILLARS (use all 6, weight Pillar 6 highest — 8+ times per month):\n1. AI News Breakdown (60-90s) — \"This AI tool just changed [industry]. Here's what it means.\"\n2. Tool of the Week (15-25s) — \"One AI tool I used this week that saved me [X hours].\"\n3. Myth vs. Reality (15-25s) — \"Everyone says AI will replace [job]. They're wrong. Here's why.\"\n4. Client Result (60-90s) — \"A client came to me with [problem]. We fixed it in [time] using AI.\"\n5. Behind the Build (60-90s) — \"Here's the exact AI stack I'm running for my consulting business.\"\n6. Live Workflow Demo (60-90s) — \"I built an AI system that [does X]. Here's the entire workflow.\" ← HIGHEST SAVE RATE\n\nMONTH TO PLAN: {{ $json.monthLabel }}\nSTART DATE: {{ $json.startDate }}\nTOTAL POSTS NEEDED: {{ $json.totalPosts }} (2 per day × {{ $json.totalDays }} days)\n\nRULES:\n- Morning posts (slot: 'morning'): Pillars 1, 2, 3 — educational/quick value\n- Evening posts (slot: 'evening'): Pillars 4, 5, 6 — results/demos/builds\n- Pillar 6 must appear at least 8 times across the month\n- No pillar should repeat on consecutive days in the same slot\n- Hooks must vary — do not repeat the same hook number in the same week\n- Content briefs must be specific to current trends, not generic\n- Connect each post to the trending topics where relevant\n\nReturn ONLY a valid JSON array of exactly {{ $json.totalPosts }} objects. No markdown, no explanation. Each object:\n{\n  \"date\": \"YYYY-MM-DD\",\n  \"slot\": \"morning\" or \"evening\",\n  \"pillar\": \"Pillar X - [Name]\",\n  \"hook_number\": 1-12,\n  \"title\": \"Specific compelling post title\",\n  \"content_brief\": \"2-3 sentences: exactly what to cover, what angle, what CTA\",\n  \"video_format\": \"60-90s Research/Demo\" or \"15-25s Short Clip\",\n  \"trending_angle\": \"Which trend this connects to\"\n}"
+          }]
+        },
+        "options": {
+          "systemMessage": "You are a content strategist for Mankind AI, an AI consulting firm. Write content that positions Mankind AI as an authoritative, approachable expert in AI automation and consulting. Tone: confident, clear, slightly educational. Avoid jargon. Speak to business owners who want AI to work for them. Always return valid JSON only — no markdown, no code blocks.",
+          "maxOutputTokens": 8192,
+          "temperature": 0.8
+        }
+      },
+      "id": "mkai-gemini-calendar",
+      "name": "Generate 30-Day Calendar",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [2880, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini's JSON calendar response\nconst geminiOutput = $input.first().json;\nconst planningData = $('Aggregate Trend Data').first().json;\n\nlet responseText = '';\nif (typeof geminiOutput === 'string') responseText = geminiOutput;\nelse if (geminiOutput.response) responseText = String(geminiOutput.response);\nelse if (geminiOutput.text) responseText = String(geminiOutput.text);\nelse if (geminiOutput.content) responseText = String(geminiOutput.content);\nelse if (geminiOutput.output) responseText = String(geminiOutput.output);\nelse responseText = JSON.stringify(geminiOutput);\n\nlet calendar;\ntry {\n  // Strip markdown if present\n  let jsonMatch = responseText.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/```\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/(\\[[\\s\\S]*\\])/);\n  const jsonString = jsonMatch ? jsonMatch[1].trim() : responseText.trim();\n  calendar = JSON.parse(jsonString);\n  if (!Array.isArray(calendar)) throw new Error('Response is not an array');\n} catch (e) {\n  // Fallback: generate a minimal calendar structure\n  calendar = planningData.dates.flatMap(date => [\n    { date, slot: 'morning', pillar: 'Pillar 1 - AI News Breakdown', hook_number: 1, title: 'AI News for ' + date, content_brief: 'Cover the latest AI news relevant to business owners.', video_format: '60-90s Research/Demo', trending_angle: 'General AI trends' },\n    { date, slot: 'evening', pillar: 'Pillar 6 - Live Workflow Demo', hook_number: 11, title: 'AI Workflow Demo ' + date, content_brief: 'Show a live AI workflow that automates a business task.', video_format: '60-90s Research/Demo', trending_angle: 'AI automation' }\n  ]);\n}\n\n// Add metadata to each record\nconst enrichedCalendar = calendar.map((post, idx) => ({\n  ...post,\n  post_index: idx + 1,\n  month_label: planningData.monthLabel,\n  brand: 'Mankind AI',\n  status: 'Generate Content',\n  created_by: 'MKAI Monthly Planner'\n}));\n\n// Return as separate items for Airtable batch create\nreturn enrichedCalendar.map(post => ({ json: post }));"
+      },
+      "id": "mkai-parse-calendar",
+      "name": "Parse Calendar JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3120, 400]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": { "__rl": true, "value": "appCdEGI61nC515lh", "mode": "id" },
+        "table": { "__rl": true, "value": "tblZ9F2o6Mw3ehKeS", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $json.title }}",
+            "Content Status": "Generate Content",
+            "Date": "={{ $json.date }}",
+            "Pillar": "={{ $json.pillar }}",
+            "Hook #": "={{ 'Hook ' + $json.hook_number }}",
+            "Video Format": "={{ $json.video_format }}",
+            "Content Brief": "={{ $json.content_brief + ' | Trending angle: ' + $json.trending_angle + ' | Slot: ' + $json.slot }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "Title", "displayName": "Title", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "readOnly": false },
+            { "id": "Date", "displayName": "Date", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "dateTime", "readOnly": false },
+            { "id": "Pillar", "displayName": "Pillar", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "readOnly": false },
+            { "id": "Hook #", "displayName": "Hook #", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "readOnly": false },
+            { "id": "Video Format", "displayName": "Video Format", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "readOnly": false },
+            { "id": "Content Brief", "displayName": "Content Brief", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "mkai-create-records",
+      "name": "Create Airtable Records",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [3360, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a summary of what was planned\nconst items = $input.all();\nconst planningData = $('Aggregate Trend Data').first().json;\n\nconst pillarCounts = {};\nfor (const item of items) {\n  const pillar = item.json.fields?.Pillar || 'Unknown';\n  pillarCounts[pillar] = (pillarCounts[pillar] || 0) + 1;\n}\n\nreturn [{\n  json: {\n    summary: `MKAI Monthly Planner Complete`,\n    month: planningData.monthLabel,\n    totalRecordsCreated: items.length,\n    pillarBreakdown: pillarCounts,\n    nextSteps: '1. Caption Generator will auto-generate captions. 2. Review captions in Airtable. 3. Set approved posts to Ready to Post. 4. Publisher runs at 9AM and 7PM ET daily.',\n    airtableUrl: 'https://airtable.com/appCdEGI61nC515lh'\n  }\n}];"
+      },
+      "id": "mkai-summary",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3600, 400]
+    }
+  ],
+  "connections": {
+    "1st of Month — 7AM ET": { "main": [[{ "node": "Set Planning Window", "type": "main", "index": 0 }]] },
+    "Set Planning Window": { "main": [[{ "node": "Start TikTok Competitor Scrape", "type": "main", "index": 0 }]] },
+    "Start TikTok Competitor Scrape": { "main": [[{ "node": "Store Run ID", "type": "main", "index": 0 }]] },
+    "Store Run ID": { "main": [[{ "node": "Wait 3 Min for Scrape", "type": "main", "index": 0 }]] },
+    "Wait 3 Min for Scrape": { "main": [[{ "node": "Fetch Scrape Results", "type": "main", "index": 0 }]] },
+    "Fetch Scrape Results": { "main": [[{ "node": "Analyze Competitor Data", "type": "main", "index": 0 }]] },
+    "Analyze Competitor Data": {
+      "main": [[
+        { "node": "Fetch HN Top Story IDs", "type": "main", "index": 0 },
+        { "node": "Aggregate Trend Data", "type": "main", "index": 0 }
+      ]]
+    },
+    "Fetch HN Top Story IDs": { "main": [[{ "node": "Prep Story IDs", "type": "main", "index": 0 }]] },
+    "Prep Story IDs": { "main": [[{ "node": "Fetch HN Story Details", "type": "main", "index": 0 }]] },
+    "Fetch HN Story Details": { "main": [[{ "node": "Aggregate Trend Data", "type": "main", "index": 0 }]] },
+    "Aggregate Trend Data": { "main": [[{ "node": "Generate 30-Day Calendar", "type": "main", "index": 0 }]] },
+    "Generate 30-Day Calendar": { "main": [[{ "node": "Parse Calendar JSON", "type": "main", "index": 0 }]] },
+    "Parse Calendar JSON": { "main": [[{ "node": "Create Airtable Records", "type": "main", "index": 0 }]] },
+    "Create Airtable Records": { "main": [[{ "node": "Build Summary", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

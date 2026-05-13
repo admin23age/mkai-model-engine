@@ -1,0 +1,171 @@
+{
+  "name": "DD Personalized Outreach",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Run Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 400],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "search",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblnVDe0GAhlYzczK", "mode": "id" },
+        "filterByFormula": "{Outreach Status} = 'Pending'",
+        "returnAll": true
+      },
+      "name": "Get Pending Contacts",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [480, 400],
+      "id": "a1b2c3d4-0001-0001-0001-000000000002"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Loop Contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [720, 400],
+      "id": "a1b2c3d4-0001-0001-0001-000000000003"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const c = $input.item.json;\nconst fields = c.fields || c;\nconst name = fields.Name || 'Friend';\nconst firstName = name.split(' ')[0];\nconst interests = Array.isArray(fields.Interests) ? fields.Interests.join(', ') : (fields.Interests || 'faith-forward apparel');\nconst history = fields['Purchase History'] || 'no previous purchases';\nconst tags = Array.isArray(fields.Tags) ? fields.Tags.join(', ') : (fields.Tags || '');\nconst email = fields.Email || '';\n\nconst prompt = `You are writing a personalized outreach email for Dorothy Dean Designs, a faith-based luxury streetwear brand rooted in Black culture.\\n\\nBrand voice: grounded, affirming, calm but confident, culturally fluent. Never preachy. Never pushy.\\n\\nCustomer info:\\n- First name: ${firstName}\\n- Interests: ${interests}\\n- Purchase history: ${history}\\n- Tags: ${tags}\\n\\nWrite a short, warm, personalized outreach email. Rules:\\n- Address them by first name only\\n- 3-4 sentences max in the body\\n- Reference their interests or purchase history naturally (if available)\\n- End with a soft, no-pressure CTA to explore the LIFT collection at dorothydeandesigns.com\\n- Do not mention discounts or urgency\\n- Sign off as Dorothy Dean Designs\\n\\nReturn ONLY valid JSON with exactly these keys: {\"subject\": \"...\", \"body\": \"...\"}`;\n\nreturn { json: { ...fields, recordId: c.id || fields.id, contactName: firstName, contactEmail: email, prompt } };"
+      },
+      "name": "Build Email Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000004"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $credentials.httpQueryAuth.value }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ \"contents\": [{ \"parts\": [{ \"text\": $json.prompt }] }], \"generationConfig\": { \"temperature\": 0.7, \"maxOutputTokens\": 600 } }) }}"
+      },
+      "name": "Generate Email with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1200, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "credentials": {
+        "httpQueryAuth": { "id": "REPLACE_WITH_GEMINI_CREDENTIAL_ID", "name": "Gemini API" }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $input.item.json;\nconst text = resp.candidates && resp.candidates[0] && resp.candidates[0].content && resp.candidates[0].content.parts && resp.candidates[0].content.parts[0] ? resp.candidates[0].content.parts[0].text : '';\nlet parsed;\ntry {\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(match ? match[0] : text);\n} catch(e) {\n  parsed = {\n    subject: 'Something special from Dorothy Dean Designs',\n    body: 'Hi there,\\n\\nWe have something just for you in our LIFT collection - pieces designed to affirm who you are becoming.\\n\\nExplore at dorothydeandesigns.com.\\n\\nWith purpose,\\nDorothy Dean Designs'\n  };\n}\nconst prev = $('Build Email Prompt').item.json;\nreturn { json: { ...prev, emailSubject: parsed.subject || 'From Dorothy Dean Designs', emailBody: parsed.body || '' } };"
+      },
+      "name": "Parse Email Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000006"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.contactEmail }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {
+          "senderName": "Dorothy Dean Designs",
+          "appendAttribution": false
+        }
+      },
+      "name": "Send Outreach Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1680, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_GMAIL_CREDENTIAL_ID", "name": "Gmail" }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "update",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblnVDe0GAhlYzczK", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "Outreach Status": "Sent",
+            "Last Contact Date": "={{ new Date().toISOString().split('T')[0] }}",
+            "Last Email Subject": "={{ $json.emailSubject }}"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "name": "Update Outreach Status",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1920, 300],
+      "id": "a1b2c3d4-0001-0001-0001-000000000008"
+    }
+  ],
+  "connections": {
+    "Run Manually": {
+      "main": [[{ "node": "Get Pending Contacts", "type": "main", "index": 0 }]]
+    },
+    "Get Pending Contacts": {
+      "main": [[{ "node": "Loop Contacts", "type": "main", "index": 0 }]]
+    },
+    "Loop Contacts": {
+      "main": [
+        [{ "node": "Build Email Prompt", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Build Email Prompt": {
+      "main": [[{ "node": "Generate Email with Gemini", "type": "main", "index": 0 }]]
+    },
+    "Generate Email with Gemini": {
+      "main": [[{ "node": "Parse Email Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Email Response": {
+      "main": [[{ "node": "Send Outreach Email", "type": "main", "index": 0 }]]
+    },
+    "Send Outreach Email": {
+      "main": [[{ "node": "Update Outreach Status", "type": "main", "index": 0 }]]
+    },
+    "Update Outreach Status": {
+      "main": [[{ "node": "Loop Contacts", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "notes": "Reads contacts from DD Customers table where Outreach Status = Pending. For each contact, uses Gemini 2.0 Flash to generate a personalized email based on their interests and purchase history, sends via Gmail, then marks the contact as Sent. Run manually; no schedule set intentionally.",
+    "setupRequired": [
+      "1. In n8n Credentials, create an HTTP Query Auth credential for Gemini API: param name 'key', value: your Google AI Studio API key",
+      "2. Connect Gmail OAuth2 credential",
+      "3. Connect Airtable Token credential",
+      "4. Replace REPLACE_WITH_GEMINI_CREDENTIAL_ID and REPLACE_WITH_GMAIL_CREDENTIAL_ID with actual credential IDs, OR re-map credentials in the n8n UI after import"
+    ]
+  }
+}

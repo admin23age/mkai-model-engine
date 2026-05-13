@@ -1,0 +1,242 @@
+{
+  "name": "Grant Writer",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Grant Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-grant-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-2",
+      "name": "Fetch Grant Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Grant Intake Webhook').first().json.body.grant_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 5
+            }
+          },
+          "allowUnauthorizedCerts": true
+        }
+      }
+    },
+    {
+      "id": "node-3",
+      "name": "Parse Grant Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input = $('Grant Intake Webhook').first().json.body || {};\nconst html  = $input.first().json.data || '';\nconst text  = html.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n\nconst requires_501c3 = /501\\(c\\)\\(3\\)|501c3|nonprofit only|non-profit only|tax.exempt organization/i.test(text);\nconst dlMatch = text.match(/deadline[^:]*:\\s*([A-Za-z]+ \\d{1,2},?\\s*\\d{4})/i);\n\nreturn [{\n  json: {\n    grant_name:      input.grant_name    || 'Unnamed Grant',\n    grant_url:       input.grant_url     || '',\n    grantor:         input.grantor       || '',\n    grant_amount:    parseFloat(input.grant_amount) || 0,\n    deadline:        input.deadline      || (dlMatch ? dlMatch[1] : ''),\n    notes:           input.notes         || '',\n    requires_501c3,\n    content_preview: text.slice(0, 1500),\n  },\n}];"
+      }
+    },
+    {
+      "id": "node-4",
+      "name": "Grant Analysis Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [720, 300],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this grant for Mankind AI Tech (MKAI). MKAI makes AI accessible and operational for small businesses and underserved communities through done-for-you AI agent systems, readiness assessments, and automation.\n\nRespond with ONLY a valid JSON object — no markdown, no explanation — with exactly these fields:\n- summary: 2-3 sentence grant summary\n- eligible: true or false (is MKAI a strong fit?)\n- requires_501c3: true or false\n- alignment_1: first specific mission alignment point between MKAI and grantor\n- alignment_2: second mission alignment point\n- alignment_3: third mission alignment point\n- next_step: one concrete immediate action for MKAI\n- sop_phase: either \"1 - Discover\" or \"2 - Qualify\"\n\nGrant Name: {{ $json.grant_name }}\nGrantor: {{ $json.grantor }}\nAmount: ${{ $json.grant_amount }}\nDeadline: {{ $json.deadline }}\nNotes: {{ $json.notes }}\n\nGrant Content Preview:\n{{ $json.content_preview }}",
+        "options": {
+          "systemMessage": "You are a professional grant writer for Mankind AI Tech (MKAI). MKAI's mission: making AI accessible, ethical, and operational for small and mid-sized businesses — especially underserved communities — through done-for-you AI agent systems, readiness assessments, and automation infrastructure. Always respond with valid JSON only. No markdown fences. No explanation text.",
+          "maxIterations": 5,
+          "returnIntermediateSteps": false
+        }
+      }
+    },
+    {
+      "id": "node-4-model",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [720, 500],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2,
+          "maxOutputTokens": 1024
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "id": "node-5",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const intake = $('Parse Grant Content').first().json;\nconst raw    = $input.first().json.output || '{}';\n\nlet ai = {};\ntry {\n  const cleaned = raw.replace(/```json|\\n```|```/g, '').trim();\n  ai = JSON.parse(cleaned);\n} catch(e) {\n  ai = {\n    eligible: true,\n    requires_501c3: intake.requires_501c3,\n    sop_phase: '1 - Discover',\n    summary: 'AI parse failed — review manually.',\n    alignment_1: 'Review grant manually for alignment',\n    alignment_2: '',\n    alignment_3: '',\n    next_step: 'Run /grant-writer [URL] in Claude Code for full analysis',\n  };\n}\n\nreturn [{\n  json: {\n    ...intake,\n    summary:         ai.summary        || '',\n    eligible:        ai.eligible       !== false,\n    requires_501c3:  ai.requires_501c3 || intake.requires_501c3 || false,\n    alignment_notes: [ai.alignment_1, ai.alignment_2, ai.alignment_3].filter(Boolean).join('\\n'),\n    next_step:       ai.next_step      || 'Run /grant-writer [URL] in Claude Code',\n    sop_phase:       ai.sop_phase      || '1 - Discover',\n    status:          ai.eligible === false ? 'Not Eligible' : 'Qualified',\n  },\n}];"
+      }
+    },
+    {
+      "id": "node-6",
+      "name": "Log to Grant Tracker",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1200, 300],
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appq98YoenqhsVjOB",
+          "cachedResultName": "Grant Tracker"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblN20ZEOvZ7Plo5w",
+          "cachedResultName": "Grants"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Grant Name":              "={{ $json.grant_name }}",
+            "Funding Source":          "={{ $json.grantor }}",
+            "Grantor Organization":    "={{ $json.grantor }}",
+            "Funding Link":            "={{ $json.grant_url }}",
+            "Grant Amount":            "={{ $json.grant_amount }}",
+            "Deadline Date":           "={{ $json.deadline }}",
+            "SOP Phase":               "={{ $json.sop_phase }}",
+            "Status":                  "={{ $json.status }}",
+            "501c3 Required":          "={{ $json.requires_501c3 }}",
+            "Mission Alignment Notes": "={{ $json.alignment_notes }}",
+            "Tasks":                   "={{ $json.next_step }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "",
+          "name": "Airtable Token"
+        }
+      }
+    },
+    {
+      "id": "node-7",
+      "name": "Send Grant Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1440, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "support@mankindaitech.com",
+        "subject": "=\ud83c\udfaf New Grant Logged: {{ $('Parse AI Response').first().json.grant_name }}",
+        "emailType": "html",
+        "message": "=<h2 style=\"font-family:Arial,sans-serif;color:#1a1a1a\">New Grant Opportunity \u2014 MKAI Grant Tracker</h2>\n<table style=\"border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:14px\">\n  <tr style=\"background:#f0f4ff\"><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold;width:160px\">Grant Name</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.grant_name }}</td></tr>\n  <tr><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">Grantor</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.grantor }}</td></tr>\n  <tr style=\"background:#f0f4ff\"><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">Amount</td><td style=\"padding:10px 14px;border:1px solid #ddd\">${{ $('Parse AI Response').first().json.grant_amount }}</td></tr>\n  <tr><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">Deadline</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.deadline }}</td></tr>\n  <tr style=\"background:#f0f4ff\"><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">Eligible</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.eligible ? '\u2705 Yes' : '\u274c No' }}</td></tr>\n  <tr><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">501c3 Required</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.requires_501c3 ? '\u26a0\ufe0f YES \u2014 Confirm eligibility' : '\u2705 No' }}</td></tr>\n  <tr style=\"background:#f0f4ff\"><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">SOP Phase</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.sop_phase }}</td></tr>\n  <tr><td style=\"padding:10px 14px;border:1px solid #ddd;font-weight:bold\">Status</td><td style=\"padding:10px 14px;border:1px solid #ddd\">{{ $('Parse AI Response').first().json.status }}</td></tr>\n</table>\n\n<h3 style=\"font-family:Arial,sans-serif;margin-top:24px\">AI Summary</h3>\n<p style=\"font-family:Arial,sans-serif;font-size:14px;line-height:1.6\">{{ $('Parse AI Response').first().json.summary }}</p>\n\n<h3 style=\"font-family:Arial,sans-serif\">Mission Alignment Points</h3>\n<p style=\"font-family:Arial,sans-serif;font-size:14px;line-height:1.8;white-space:pre-line\">{{ $('Parse AI Response').first().json.alignment_notes }}</p>\n\n<h3 style=\"font-family:Arial,sans-serif\">Recommended Next Step</h3>\n<p style=\"font-family:Arial,sans-serif;font-size:14px\">{{ $('Parse AI Response').first().json.next_step }}</p>\n\n<hr style=\"margin:32px 0;border:none;border-top:1px solid #ddd\"/>\n<p style=\"font-family:Arial,sans-serif;font-size:12px;color:#888\">\n  MKAI Grant Writer Workflow &nbsp;&bull;&nbsp;\n  <a href=\"{{ $('Parse AI Response').first().json.grant_url }}\" style=\"color:#4a6cf7\">View Grant</a>\n  &nbsp;&bull;&nbsp; Logged {{ $now.toISO() }}\n</p>",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "MKAI Grant Agent"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "id": "node-8",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1680, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Grant logged to Airtable. Email notification sent.\",\n  \"grant_name\": \"{{ $('Parse AI Response').first().json.grant_name }}\",\n  \"sop_phase\": \"{{ $('Parse AI Response').first().json.sop_phase }}\",\n  \"eligible\": {{ $('Parse AI Response').first().json.eligible }},\n  \"airtable_id\": \"{{ $('Log to Grant Tracker').first().json.id }}\",\n  \"next_step\": \"{{ $('Parse AI Response').first().json.next_step }}\",\n  \"warning\": \"{{ $('Parse AI Response').first().json.requires_501c3 ? '\u26a0\ufe0f 501c3 required \u2014 confirm MKAI eligibility' : '' }}\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Grant Intake Webhook": {
+      "main": [
+        [{ "node": "Fetch Grant Page", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Grant Page": {
+      "main": [
+        [{ "node": "Parse Grant Content", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Grant Content": {
+      "main": [
+        [{ "node": "Grant Analysis Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [{ "node": "Grant Analysis Agent", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Grant Analysis Agent": {
+      "main": [
+        [{ "node": "Parse AI Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [{ "node": "Log to Grant Tracker", "type": "main", "index": 0 }]
+      ]
+    },
+    "Log to Grant Tracker": {
+      "main": [
+        [{ "node": "Send Grant Alert", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Grant Alert": {
+      "main": [
+        [{ "node": "Webhook Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}

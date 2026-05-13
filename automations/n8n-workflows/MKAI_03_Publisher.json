@@ -1,0 +1,237 @@
+{
+  "name": "MKAI 03 — Publisher (9AM + 7PM ET)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 13 * * *" },
+            { "field": "cronExpression", "expression": "0 23 * * *" }
+          ]
+        }
+      },
+      "id": "mkai-pub-trigger",
+      "name": "9AM + 7PM ET Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400],
+      "notes": "9AM ET = 13:00 UTC | 7PM ET = 23:00 UTC"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Determine today's date and expected slot (morning vs evening)\nconst now = new Date();\nconst utcHour = now.getUTCHours();\nconst slot = utcHour < 18 ? 'morning' : 'evening'; // Before 6PM UTC = morning run\n\n// Today in ET (UTC-4)\nconst etOffset = -4;\nconst etNow = new Date(now.getTime() + etOffset * 60 * 60 * 1000);\nconst today = etNow.toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    today,\n    slot,\n    runTime: now.toISOString(),\n    etHour: utcHour + etOffset\n  }\n}];"
+      },
+      "id": "mkai-set-today",
+      "name": "Set Today + Slot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appCdEGI61nC515lh", "mode": "id" },
+        "table": { "__rl": true, "value": "tblZ9F2o6Mw3ehKeS", "mode": "id" },
+        "filterByFormula": "=AND({Content Status} = 'Ready to Post', IS_SAME({Date}, DATETIME_PARSE('{{ $json.today }}', 'YYYY-MM-DD'), 'day'))",
+        "options": {}
+      },
+      "id": "mkai-query-ready",
+      "name": "Query Ready to Post",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{
+            "id": "has-posts",
+            "leftValue": "={{ $json.id }}",
+            "rightValue": "",
+            "operator": { "type": "string", "operation": "notEmpty" }
+          }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "mkai-has-posts",
+      "name": "Any Posts Today?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [{
+            "id": "no-posts",
+            "name": "message",
+            "value": "No posts ready for today. Check Airtable — set status to Ready to Post to queue content.",
+            "type": "string"
+          }]
+        },
+        "options": {}
+      },
+      "id": "mkai-no-posts",
+      "name": "No Posts — Skip",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare post data from Airtable record\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const fields = item.json.fields || item.json;\n  \n  // Extract slot from content brief if available\n  const brief = fields['Content Brief'] || '';\n  const slotMatch = brief.match(/Slot: (morning|evening)/i);\n  const slot = slotMatch ? slotMatch[1] : 'any';\n  \n  results.push({\n    json: {\n      recordId: item.json.id,\n      title: fields.Title || 'Mankind AI',\n      tiktokCaption: fields['TikTok Caption'] || '',\n      linkedinCaption: fields['LinkedIn Caption'] || '',\n      mediaUrl: fields['Media URL'] || '',\n      pillar: fields.Pillar || '',\n      slot\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "mkai-prepare-posts",
+      "name": "Prepare Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{
+            "id": "has-media",
+            "leftValue": "={{ $json.mediaUrl }}",
+            "rightValue": "",
+            "operator": { "type": "string", "operation": "notEmpty" }
+          }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "mkai-has-media",
+      "name": "Has Media URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [{
+            "id": "no-media-flag",
+            "name": "skipReason",
+            "value": "=No media URL for record {{ $json.recordId }} — skipping publish, setting to needs-media.",
+            "type": "string"
+          }, {
+            "id": "no-media-id",
+            "name": "recordId",
+            "value": "={{ $json.recordId }}",
+            "type": "string"
+          }]
+        },
+        "options": {}
+      },
+      "id": "mkai-no-media",
+      "name": "Flag — No Media",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1680, 580]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/content/init/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json; charset=UTF-8" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.title, description: $json.tiktokCaption, disable_duet: false, disable_comment: false, disable_stitch: false, privacy_level: 'PUBLIC_TO_EVERYONE' }, source_info: { source: 'PULL_FROM_URL', photo_images: [$json.mediaUrl] }, post_mode: 'DIRECT_POST', media_type: 'PHOTO' }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "mkai-tiktok-post",
+      "name": "Post to TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1680, 240]
+    },
+    {
+      "parameters": {
+        "postAs": "organization",
+        "organization": "={{ $credentials.linkedInOrganizationUrn }}",
+        "text": "={{ $('Prepare Post Data').item.json.linkedinCaption }}",
+        "shareMediaCategory": "ARTICLE",
+        "additionalFields": {
+          "description": "={{ $('Prepare Post Data').item.json.title }} — Mankind AI",
+          "originalUrl": "https://mankindaitech.com"
+        }
+      },
+      "id": "mkai-linkedin-post",
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [1680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepareData = $('Prepare Post Data').first().json;\nconst tiktokResult = $('Post to TikTok').first()?.json || {};\nconst linkedInResult = $('Post to LinkedIn').first()?.json || {};\n\nconst tiktokOk = !!(tiktokResult.data?.publish_id);\nconst linkedInOk = !!(linkedInResult.urn);\n\nreturn [{\n  json: {\n    recordId: prepareData.recordId,\n    tiktokStatus: tiktokOk ? 'success' : 'failed',\n    linkedInStatus: linkedInOk ? 'success' : 'failed',\n    tiktokPublishId: tiktokResult.data?.publish_id || null,\n    linkedInUrn: linkedInResult.urn || null,\n    postedAt: new Date().toISOString(),\n    anySuccess: tiktokOk || linkedInOk\n  }\n}];"
+      },
+      "id": "mkai-collect-results",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 400]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": { "__rl": true, "value": "appCdEGI61nC515lh", "mode": "id" },
+        "table": { "__rl": true, "value": "tblZ9F2o6Mw3ehKeS", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "Content Status": "Posted",
+            "Notes": "=Posted {{ $json.postedAt }}. TikTok: {{ $json.tiktokStatus }} | LinkedIn: {{ $json.linkedInStatus }}"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Posted", "value": "Posted" }], "readOnly": false },
+            { "id": "Notes", "displayName": "Notes", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "mkai-mark-posted",
+      "name": "Mark as Posted",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [2160, 400]
+    }
+  ],
+  "connections": {
+    "9AM + 7PM ET Daily": { "main": [[{ "node": "Set Today + Slot", "type": "main", "index": 0 }]] },
+    "Set Today + Slot": { "main": [[{ "node": "Query Ready to Post", "type": "main", "index": 0 }]] },
+    "Query Ready to Post": { "main": [[{ "node": "Any Posts Today?", "type": "main", "index": 0 }]] },
+    "Any Posts Today?": {
+      "main": [
+        [{ "node": "Prepare Post Data", "type": "main", "index": 0 }],
+        [{ "node": "No Posts — Skip", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Post Data": { "main": [[{ "node": "Has Media URL?", "type": "main", "index": 0 }]] },
+    "Has Media URL?": {
+      "main": [
+        [
+          { "node": "Post to TikTok", "type": "main", "index": 0 },
+          { "node": "Post to LinkedIn", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Flag — No Media", "type": "main", "index": 0 }]
+      ]
+    },
+    "Post to TikTok": { "main": [[{ "node": "Collect Results", "type": "main", "index": 0 }]] },
+    "Post to LinkedIn": { "main": [[{ "node": "Collect Results", "type": "main", "index": 0 }]] },
+    "Collect Results": { "main": [[{ "node": "Mark as Posted", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

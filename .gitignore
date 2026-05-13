@@ -1,0 +1,26 @@
+# Credentials — never commit
+.env
+.env.*
+!.env.example
+
+# Workspace memory — personal data
+MASTER_CONTEXT.md
+
+# Reference images — large binary files
+references/influencers/
+references/products/
+references/aesthetics/
+references/logos/
+references/examples/
+
+# Generated copies of skills (canonical source is skills/)
+.claude/skills/arcads-external-api/
+.claude/skills/generate-youtube-thumbnail/
+.cursor/
+
+# Logs
+logs/arcads-api.jsonl
+
+# OS files
+.DS_Store
+Thumbs.db

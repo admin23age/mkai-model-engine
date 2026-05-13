@@ -1,0 +1,98 @@
+{
+  "name": "MKAI 02 — Caption Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyX", "value": 12, "unit": "hours" }] },
+        "authentication": "airtableTokenApi",
+        "baseId": { "__rl": true, "value": "appCdEGI61nC515lh", "mode": "id" },
+        "tableId": { "__rl": true, "value": "tblZ9F2o6Mw3ehKeS", "mode": "id" },
+        "triggerField": "Last Modified",
+        "additionalFields": { "formula": "{Content Status} = 'Generate Content'" }
+      },
+      "id": "mkai-gen-trigger",
+      "name": "Poll — Generate Content",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract post data from Airtable record\nconst item = $input.first();\nconst fields = item.json.fields || item.json;\n\n// Parse content brief to extract slot if embedded\nconst brief = fields['Content Brief'] || '';\nconst slotMatch = brief.match(/Slot: (morning|evening)/i);\nconst slot = slotMatch ? slotMatch[1] : 'morning';\nconst cleanBrief = brief.replace(/ \\| Slot: (morning|evening)/i, '').trim();\n\nreturn [{\n  json: {\n    recordId: item.json.id || '',\n    title: fields.Title || 'Mankind AI Post',\n    pillar: fields.Pillar || '',\n    hookNumber: fields['Hook #'] || '',\n    contentBrief: cleanBrief,\n    videoFormat: fields['Video Format'] || '60-90s Research/Demo',\n    date: fields.Date || '',\n    slot\n  }\n}];"
+      },
+      "id": "mkai-extract-post",
+      "name": "Extract Post Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "models/gemini-2.5-pro", "mode": "id" },
+        "messages": {
+          "values": [{
+            "role": "user",
+            "content": "=Generate 2 social media captions for a Mankind AI post.\n\nPost Details:\n- Title: {{ $json.title }}\n- Content Pillar: {{ $json.pillar }}\n- Hook: {{ $json.hookNumber }}\n- Content Brief: {{ $json.contentBrief }}\n- Video Format: {{ $json.videoFormat }}\n- Posting Slot: {{ $json.slot }} ({{ $json.slot === 'morning' ? 'educational/informational tone' : 'results-focused/demo tone' }})\n\nReturn ONLY valid JSON with these exact keys (no markdown, no code blocks):\n{\n  \"tiktok\": \"Hook-first caption. Max 150 chars. Punchy and direct. End with 1-2 hashtags: #MankindAI and one trending tag like #AITools or #Automation\",\n  \"linkedin\": \"Professional 2-4 sentence caption for business owners and decision-makers. Start with a bold statement or question. Include the insight or result. End with a question or CTA. No hashtags. Mention mankindaitech.com naturally.\"\n}"
+          }]
+        },
+        "options": {
+          "systemMessage": "You are a content strategist for Mankind AI, an AI consulting firm. Write captions that position the brand as an authoritative, approachable expert in AI automation and consulting. Tone: confident, clear, slightly educational. Avoid jargon. Speak to business owners and professionals who want AI to work for them. Always return valid JSON only.",
+          "maxOutputTokens": 1024,
+          "temperature": 0.7
+        }
+      },
+      "id": "mkai-gemini-captions",
+      "name": "Generate Captions",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const geminiOutput = $input.first().json;\nconst postData = $('Extract Post Data').first().json;\n\nlet responseText = '';\nif (typeof geminiOutput === 'string') responseText = geminiOutput;\nelse if (geminiOutput.response) responseText = String(geminiOutput.response);\nelse if (geminiOutput.text) responseText = String(geminiOutput.text);\nelse if (geminiOutput.content) responseText = String(geminiOutput.content);\nelse if (geminiOutput.output) responseText = String(geminiOutput.output);\nelse responseText = JSON.stringify(geminiOutput);\n\nlet captionsData;\ntry {\n  let jsonMatch = responseText.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/```\\s*([\\s\\S]*?)\\s*```/);\n  if (!jsonMatch) jsonMatch = responseText.match(/(\\{[\\s\\S]*\\})/);\n  const jsonString = jsonMatch ? jsonMatch[1].trim() : responseText.trim();\n  captionsData = JSON.parse(jsonString);\n} catch (e) {\n  captionsData = {\n    tiktok: `${postData.title} — AI that works for your business. #MankindAI #AITools`,\n    linkedin: `At Mankind AI, we help business owners implement AI that saves time and drives real results. ${postData.contentBrief} Ready to see what AI can do for your business? Visit mankindaitech.com`\n  };\n}\n\nreturn [{\n  json: {\n    recordId: postData.recordId,\n    tiktokCaption: captionsData.tiktok || '',\n    linkedinCaption: captionsData.linkedin || ''\n  }\n}];"
+      },
+      "id": "mkai-parse-captions",
+      "name": "Parse Captions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": { "__rl": true, "value": "appCdEGI61nC515lh", "mode": "id" },
+        "table": { "__rl": true, "value": "tblZ9F2o6Mw3ehKeS", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "TikTok Caption": "={{ $json.tiktokCaption }}",
+            "LinkedIn Caption": "={{ $json.linkedinCaption }}",
+            "Content Status": "Caption Ready"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true },
+            { "id": "TikTok Caption", "displayName": "TikTok Caption", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "LinkedIn Caption", "displayName": "LinkedIn Caption", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "string", "readOnly": false },
+            { "id": "Content Status", "displayName": "Content Status", "required": false, "defaultMatch": false, "canBeUsedToMatch": true, "display": true, "type": "options", "options": [{ "name": "Caption Ready", "value": "Caption Ready" }], "readOnly": false }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "id": "mkai-update-captions",
+      "name": "Save Captions to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1200, 400]
+    }
+  ],
+  "connections": {
+    "Poll — Generate Content": { "main": [[{ "node": "Extract Post Data", "type": "main", "index": 0 }]] },
+    "Extract Post Data": { "main": [[{ "node": "Generate Captions", "type": "main", "index": 0 }]] },
+    "Generate Captions": { "main": [[{ "node": "Parse Captions", "type": "main", "index": 0 }]] },
+    "Parse Captions": { "main": [[{ "node": "Save Captions to Airtable", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "callerPolicy": "workflowsFromSameOwner" },
+  "meta": { "templateCredsSetupCompleted": true }
+}

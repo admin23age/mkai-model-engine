@@ -1,0 +1,155 @@
+{
+  "name": "DD Content Repurposing",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyHour" }] },
+        "authentication": "airtableTokenApi",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "triggerField": "Last Modified",
+        "additionalFields": {
+          "formula": "AND({Repurposed} = 0, {Instagram Caption} != '', {Content Status} = 'Posted')"
+        }
+      },
+      "name": "Watch for Posted Content",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [240, 400],
+      "id": "b2c3d4e5-0002-0002-0002-000000000001"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const fields = $input.item.json.fields || $input.item.json;\nconst recordId = $input.item.json.id || fields.id || '';\nconst title = fields.Title || 'this piece';\nconst instagramCaption = fields['Instagram Caption'] || '';\nconst facebookCaption = fields['Facebook  Caption'] || '';\nconst originalCaption = fields.Caption || '';\nconst baseContent = instagramCaption || originalCaption || title;\n\nif (!baseContent || baseContent.trim() === '') {\n  return { json: { skip: true, recordId, reason: 'No content to repurpose' } };\n}\n\nconst prompt = `You are a content strategist for Dorothy Dean Designs, a faith-based luxury streetwear brand rooted in Black culture.\\n\\nBrand voice: grounded, affirming, calm but confident, culturally fluent. Never preachy.\\n\\nOriginal Instagram post:\\nTitle: ${title}\\nCaption: ${baseContent}\\n\\nRepurpose this content into 4 different formats. Return ONLY valid JSON with exactly these keys:\\n{\\n  \"twitter_thread\": \"A 3-tweet thread. Each tweet separated by \\\\n---\\\\n. Under 280 chars each. Conversational, no hashtags needed.\",\\n  \"linkedin_post\": \"Professional but warm LinkedIn post, 2-3 paragraphs. Speak to faith-driven professionals. Include 2-3 relevant hashtags at end.\",\\n  \"blog_intro\": \"Opening 2 paragraphs for a blog post based on this content. Storytelling style, draws the reader in.\",\\n  \"email_snippet\": \"Short email marketing snippet (2-3 sentences) suitable for a newsletter. First-person brand voice. No subject line needed.\",\\n  \"pinterest_description\": \"Pinterest pin description, 100-150 words. Keyword-rich but natural. Include faith, style, and culture keywords.\"\n}`;\n\nreturn { json: { recordId, title, baseContent, prompt, skip: false } };"
+      },
+      "name": "Build Repurpose Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400],
+      "id": "b2c3d4e5-0002-0002-0002-000000000002"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Has Content?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [720, 400],
+      "id": "b2c3d4e5-0002-0002-0002-000000000003"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ \"model\": \"claude-haiku-4-5-20251001\", \"max_tokens\": 1500, \"messages\": [{ \"role\": \"user\", \"content\": $json.prompt }] }) }}"
+      },
+      "name": "Generate Repurposed Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [960, 300],
+      "id": "b2c3d4e5-0002-0002-0002-000000000004",
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_WITH_ANTHROPIC_CREDENTIAL_ID", "name": "Anthropic API" }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp = $input.item.json;\nconst text = resp.content && resp.content[0] ? resp.content[0].text : '';\nlet parsed;\ntry {\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(match ? match[0] : text);\n} catch(e) {\n  parsed = {\n    twitter_thread: text,\n    linkedin_post: '',\n    blog_intro: '',\n    email_snippet: '',\n    pinterest_description: ''\n  };\n}\nconst prev = $('Build Repurpose Prompt').item.json;\nreturn { json: {\n  recordId: prev.recordId,\n  twitterThread: parsed.twitter_thread || '',\n  linkedinPost: parsed.linkedin_post || '',\n  blogIntro: parsed.blog_intro || '',\n  emailSnippet: parsed.email_snippet || '',\n  pinterestDescription: parsed.pinterest_description || '',\n  repurposedAt: new Date().toISOString()\n} };"
+      },
+      "name": "Parse Repurposed Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "id": "b2c3d4e5-0002-0002-0002-000000000005"
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "update",
+        "base": { "__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id" },
+        "table": { "__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.recordId }}",
+            "Twitter Thread": "={{ $json.twitterThread }}",
+            "LinkedIn Post": "={{ $json.linkedinPost }}",
+            "Blog Intro": "={{ $json.blogIntro }}",
+            "Email Snippet": "={{ $json.emailSnippet }}",
+            "Pinterest Description": "={{ $json.pinterestDescription }}",
+            "Repurposed": true,
+            "Repurposed At": "={{ $json.repurposedAt }}"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            { "id": "id", "displayName": "id", "required": false, "defaultMatch": true, "display": true, "type": "string", "readOnly": true }
+          ]
+        },
+        "options": { "typecast": true }
+      },
+      "name": "Save Repurposed Content",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1440, 300],
+      "id": "b2c3d4e5-0002-0002-0002-000000000006"
+    }
+  ],
+  "connections": {
+    "Watch for Posted Content": {
+      "main": [[{ "node": "Build Repurpose Prompt", "type": "main", "index": 0 }]]
+    },
+    "Build Repurpose Prompt": {
+      "main": [[{ "node": "Has Content?", "type": "main", "index": 0 }]]
+    },
+    "Has Content?": {
+      "main": [
+        [{ "node": "Generate Repurposed Content", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Generate Repurposed Content": {
+      "main": [[{ "node": "Parse Repurposed Content", "type": "main", "index": 0 }]]
+    },
+    "Parse Repurposed Content": {
+      "main": [[{ "node": "Save Repurposed Content", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "notes": "Polls Airtable Posts table every hour for records where Content Status = Posted and Repurposed = false and Instagram Caption is not empty. For each matching post, generates Twitter thread, LinkedIn post, blog intro, email snippet, and Pinterest description using Claude Haiku, then saves them back to the Airtable record and marks Repurposed = true.",
+    "setupRequired": [
+      "1. In n8n Credentials, create an HTTP Header Auth credential for Anthropic API (header name: x-api-key, value: your Anthropic API key)",
+      "2. Connect Airtable Token credential",
+      "3. After import, open the workflow and reconnect credentials in the two Airtable nodes and the HTTP Request node"
+    ]
+  }
+}
