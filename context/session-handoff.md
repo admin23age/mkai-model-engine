@@ -1,131 +1,88 @@
 # MKAI Session Handoff
-*Capsized: 2026-05-08*
+*Updated: 2026-05-13*
 
 ## What Was Accomplished This Session
 
-### 1. Git Repository — Fully Operational
-- Repo: `https://github.com/admin23age/mkai-model-engine` (private)
-- Local: `C:/Users/immav/Projects/model-engine/`
-- `.claude/commands/` in repo — `/prime`, `/create-plan`, `/implement`, `/grant-writer`
-- Home `C:/Users/immav/CLAUDE.md` redirects to repo
+### 1. Arcads Skill Pack — Installed from GitHub
+- **Source:** `https://github.com/krusemediallc/arcads-claude-code`
+- **Installed to:** `.claude/skills/arcads-external-api/` (22 files)
+- **Includes:** Full API reference, 15 prompt library templates, analyze-video sub-skill, clone-ad sub-skill
+- **Models supported:** Seedance 2.0, Sora 2, Veo 3.1, Kling 3.0, Grok Video, Nano Banana 2
+- **YouTube thumbnails:** `.claude/skills/generate-youtube-thumbnail/` — Nano Banana 2 batch generation
+- **Shared prompting:** `shared/skills/generate-youtube-thumbnail/prompting/` — guide.md + formulas.md
+- **Status:** Skill files installed. Arcads API key NOT yet configured — user needs to sign up at arcads.ai
 
-### 2. Agent Division of Labor — Locked
-- `CLAUDE.md` → Foundational Engineer (architecture, code, plans)
-- `GEMINI.md` → Operations Agent (workflows, data sync, reporting)
-- Both files in repo root and on Oracle VM
+### 2. MKAI Model Engine — Installed from GitHub
+- **Source:** `https://github.com/admin23age/mkai-model-engine`
+- **What was added:**
+  - `.claude/commands/` — prime.md, create-plan.md, implement.md, grant-writer.md
+  - `automations/gsd-agents/` — 33 GSD framework agent prompts
+  - `automations/gsd-hooks/` — 3 lifecycle hook scripts
+  - `automations/gsd-scripts/` — 4 security scanning scripts
+  - `automations/gsd-sdk/` — GSD SDK package
+  - `automations/marketing-tools/` — marketing tool registry
+  - `automations/n8n-workflows/` — 8 n8n workflows (DD + MKAI)
+  - `automations/grants/` — grant writer workflow template
+  - `skills/grant-writer/` — agent.md, prompt-library.md, weekly-grant-writer.md
+  - `sop/` — grant-writing.md, skills-management.md
+  - `memory-bank/ddd/` — faith.md, identity.md, legacy.md, tomorrow.md
+  - `memory-bank/mkai/` — case-study.md, tech.md, thought-leadership.md
+  - `context/` — 11 context files (business-info, brand guides, agent system, service tiers, etc.)
+  - `reference/gsd/` — 55+ GSD reference docs
+  - `reference/marketing/` — marketing skill validation
+  - `outputs/gsd-templates/` — 25+ GSD output templates
 
-### 3. Oracle VM — Live (us-phoenix-1)
-- **Public IP:** `129.151.26.21`
-- **Private IP:** `10.0.0.159`
-- **Compartment:** `dddesigns12` (root)
-- **VCN CIDR:** `10.0.0.0/16`
-- **Twingate Tenant:** `mychitchat126.twingate.com`
+### 3. Configuration & Security
+- `.env` created with GitHub token (gitignored, never committed)
+- `.env.example` installed as blank template (committed)
+- `.gitignore` configured to protect: .env, MASTER_CONTEXT.md, references/, logs
+- `MASTER_CONTEXT.template.md` installed — copy to MASTER_CONTEXT.md when Arcads is configured
+- Scripts installed: `scripts/setup.sh`, `scripts/check-arcads-env.sh`, `scripts/sync-skill.sh`
 
-**Confirmed stack on VM:**
-| Tool | Version | Status |
-|---|---|---|
-| Claude Code | v2.1.101 | ✅ Authenticated |
-| Gemini CLI | 0.37.1 | ✅ Running |
-| Node.js | v20.x | ✅ |
-| PM2 | latest | ✅ MCP server running |
-| Git | latest | ✅ Repo cloned at `/root/mkai-model-engine/` |
-| Cron auto-pull | */15 * * * * | ✅ |
+### 4. Git — Pushed to GitHub
+- **Repo:** `https://github.com/admin23age/mkai-model-engine`
+- **Branch:** `main`
+- **Commit:** 228 files, 46,604 lines
+- **Token in chat — ROTATE IT:** GitHub token was pasted in chat. User should rotate at GitHub Settings > Developer settings > Personal access tokens, then update `.env`
 
-**Claude Code config on VM:**
-- Path: `/root/.claude/settings.json`
-- Mode: `--permission-mode plan`
-- Denied: WebFetch, WebSearch, Bash(curl *), Bash(wget *)
-
-**Gemini config on VM:**
-- `/root/.gemini/` created ✅
-- `/root/.gemini/GEMINI.md` system constitution ✅
-
-### 4. Oracle Security List — Ports Open
-| Port | Purpose | Status |
-|---|---|---|
-| 22 | SSH | ✅ Open |
-| 80 | HTTP | ✅ Open |
-| 443 | HTTPS / Webhooks | ✅ Open |
-| 5678 | n8n UI | ✅ Open (lock to Twingate CIDR after connector deployed) |
-
----
-
-## Remaining — Next Session Priorities
-
-### Priority 1 — OS Firewall (iptables) on VM ⬅ IMMEDIATE
-Not yet confirmed. Run on VM:
-```bash
-sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
-sudo iptables -I INPUT -p tcp --dport 5678 -j ACCEPT
-sudo iptables-save | sudo tee /etc/iptables/rules.v4
-```
-Verify:
-```bash
-sudo iptables -L INPUT --line-numbers | grep -E "80|443|5678"
-```
-
-### Priority 2 — Twingate Connector on VM
-Twingate client is on Windows (`mychitchat126.twingate.com`) but **connector is NOT deployed on the VM yet.**
-
-**Steps:**
-1. Twingate Admin → Remote Networks → Add Network → `oracle-vm-phoenix`
-2. Connectors → Deploy Connector → copy token
-3. On VM:
-```bash
-curl -s https://binaries.twingate.com/connector/setup.sh | sudo bash
-sudo twingate-connector setup --token YOUR_TOKEN_HERE
-sudo systemctl enable twingate-connector
-sudo systemctl start twingate-connector
-```
-4. Add Resource: `10.0.0.159`
-5. After connector live → lock OCI Security List port 5678 source to Twingate CIDR (remove `0.0.0.0/0`)
-
-### Priority 3 — Docker + n8n on VM
-```bash
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-docker run -d --restart unless-stopped \
-  --name n8n \
-  -p 5678:5678 \
-  -v ~/.n8n:/home/node/.n8n \
-  n8nio/n8n
-```
-Verify: `docker ps | grep n8n`
-Access: `http://10.0.0.159:5678` via Twingate
-
-### Priority 4 — AGE-core-infrastructure Repo Migration
-- Review: `context/`, `Claude` file, Docker/Nginx configs
-- Migrate useful infra configs → `mkai-model-engine/reference/` or new `infra/`
-- Then delete `AGE-core-infrastructure` repo
-
-### Priority 5 — n8n Workflow Credentials & Imports
-From `dd-automation-status.md`:
-- Import: `DD_Personalized_Outreach.json`, `DD_Content_Repurposing.json` (JSONs in `outputs/`)
-- Connect: Twilio (Text Support), Calendly (Appointment Setting)
-- Connect: Gmail OAuth2, Google Calendar OAuth2, Airtable token, Gemini API
-- Confirm: Zoho Flow webhook URL for workflow #12
-
-### Priority 6 — MCP Config Update
-- Update `.mcp.json` to point MCP server at VM once n8n is live
+### 5. CLAUDE.md — Fully Updated
+- Workspace structure updated with all new directories
+- Key directories table expanded with Arcads, GSD, memory-bank, references entries
+- Arcads Integration section added
+- MKAI Model Engine section added
+- /grant-writer command documented
 
 ---
 
-## Daily Workflow
-```bash
-# Windows (dev/engineer)
-cd C:/Users/immav/Projects/model-engine
-claude
+## Where Everything Lives
 
-# Oracle VM (ops)
-cd ~/mkai-model-engine && git pull
-claude --permission-mode plan   # Claude as engineer
-gemini                          # Gemini as ops agent
-```
+### Skills (agent reads these when triggered)
+| Skill | Path | Trigger |
+|-------|------|---------|
+| Arcads External API | `.claude/skills/arcads-external-api/SKILL.md` | Arcads, Seedance, Sora, Veo, Kling, Nano Banana, AI video |
+| YouTube Thumbnails | `.claude/skills/generate-youtube-thumbnail/SKILL.md` | YouTube thumbnail, thumbnail generation |
+| Grant Writer | `skills/grant-writer/agent.md` | /grant-writer, grant applications |
+| GitHub | `github-skill/SKILL.md` | GitHub workflow, repo operations |
 
-## Key Reference Files
-- `reference/vm-stack-status.md` — full VM state
-- `reference/vm-gemini-install.md` — VM setup guide
-- `context/dd-automation-status.md` — n8n workflow tracker
-- `GEMINI.md` — Gemini ops constitution
-- `CLAUDE.md` — Claude engineer constitution
+### Commands
+| Command | Path |
+|---------|------|
+| /prime | `.claude/commands/prime.md` |
+| /create-plan | `.claude/commands/create-plan.md` |
+| /implement | `.claude/commands/implement.md` |
+| /grant-writer | `.claude/commands/grant-writer.md` |
+
+### Context (read by /prime)
+| File | Purpose |
+|------|---------|
+| `context/business-info.md` | MKAI business overview |
+| `context/mkai-service-tiers.md` | Service tier definitions |
+| `context/mkai-agent-system.md` | Agent hierarchy docs |
+| `context/mkai-grant-profile.md` | Grant application profile |
+| `context/dd-brand-guide.md` | Dorothy Dean Designs brand |
+| `context/dd-automation-status.md` | DD n8n workflow tracker |
+| `context/session-handoff.md` | This file — session state |
+
+### Automations
+| Directory | Contents |
+|-----------|-
