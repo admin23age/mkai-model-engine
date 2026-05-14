@@ -34,27 +34,29 @@ Day 28 reminder: review fal.ai spend + Seedance subscription usage. Decision tre
 
 ## Airtable schema (LIVE — `appr0OjO1x803LE3z`)
 
-**Built as a dedicated work queue** in a new table, kept separate from the n8n-tied `DD Content Queue` to avoid breaking existing workflows.
+**Single-table model.** All Seedance fields live on `DD Content Queue` (`tblQ9hxifG4Y3Uech`) alongside the existing content fields. The earlier separate `Video Creation Queue` table was consolidated away — deleted manually in the Airtable UI (the API doesn't support table deletion).
 
-### `Video Creation Queue` (`tblHmldbdiNtXsELc`) — the work queue
+### `DD Content Queue` — relevant fields
 
+**Pre-existing (used by skill):**
 | Field | Type | Notes |
 |---|---|---|
-| `Content ID#` | autoNumber (primary) | Stable handle for filenames + logs |
-| `Reference Images` | link → DD Content Queue | Pointer to parent content row (name is legacy; field actually links to the parent, not images) |
-| `Visual Theme` | multilineText | Optional theme override; otherwise inherited from parent |
-| `Seedance Prompt` | singleLineText | Primary prompt |
-| `Duration` | number (precision 0) | Seconds |
+| `Title` | singleLineText | Primary field |
+| `Reference Image` | multipleAttachments | Up to 9 reference images for Seedance |
+| `Visual Theme` | multilineText | Optional theme; appended to prompt |
+| `Video Format` | singleSelect | Drives aspect ratio inference |
+| `Media URL` | url | Final video URL written here on success |
+
+**Added 2026-05-13 for Seedance pipeline:**
+| Field | Type | Notes |
+|---|---|---|
+| `Seedance Prompt` | multilineText | Primary prompt |
+| `Duration` | number (precision 0) | Seconds (5 or 10) |
 | `Tier` | singleSelect | `Basic` / `Pro` / `Premium` |
 | `Resolution` | singleSelect | `720p` / `1080p` / `4K` |
-| `Video URL` | url | Written on success |
 | `Video Status` | singleSelect | `Queued` → `Generating` → `Complete` / `Error` |
 | `Last Generation Error` | multilineText | Traceback on failure |
 | `Generation Run ID` | singleLineText | fal.ai `request_id` |
-
-### `DD Content Queue` (`tblQ9hxifG4Y3Uech`) — source of reference media
-
-Provides `Reference Image` (attachment, up to 9) and `Visual Theme` via the inverse link field `Video Creation`.
 
 ### Tier → model mapping
 

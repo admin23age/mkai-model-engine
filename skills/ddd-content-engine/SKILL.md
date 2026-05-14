@@ -17,20 +17,20 @@ Triggered by an hourly Claude routine that polls the DD Content Queue table for 
 
 ## Airtable schema
 
-**Primary table:** `Video Creation Queue` (`tblHmldbdiNtXsELc`) — the work queue
-**Linked table:** `DD Content Queue` (`tblQ9hxifG4Y3Uech`) — source of reference image attachments + visual theme
+**Single table:** `DD Content Queue` (`tblQ9hxifG4Y3Uech`). All Seedance fields live alongside the existing content fields.
 
-| Field on Video Creation Queue | Used as |
+| Field | Used as |
 |---|---|
-| `Content ID#` (autoNumber, primary) | Filename + log handle |
-| `Reference Images` (link → DD Content Queue) | Pointer to parent content row; skill follows it to fetch attachments |
-| `Visual Theme` (multiline) | Appended to prompt if present |
-| `Seedance Prompt` (single line) | Primary prompt |
+| `Title` (primary) | Filename + log handle |
+| `Reference Image` (attachment, max 9) | Sent to Seedance as `reference_images` |
+| `Visual Theme` (multiline) | Appended to prompt if non-empty |
+| `Video Format` (singleSelect) | Drives `aspect_ratio` inference |
+| `Seedance Prompt` (multiline) | Primary prompt |
 | `Duration` (number) | Seconds (5 or 10) |
 | `Tier` (singleSelect) | `Basic` / `Pro` / `Premium` — drives model selection |
 | `Resolution` (singleSelect) | `720p` / `1080p` / `4K` |
-| `Video URL` (url) | Written on success — Drive shareable link |
 | `Video Status` (singleSelect) | `Queued` → `Generating` → `Complete` / `Error` |
+| `Media URL` (url) | Final video URL written on success |
 | `Last Generation Error` (multiline) | Traceback on failure |
 | `Generation Run ID` (single line) | fal.ai `request_id` |
 
@@ -53,23 +53,22 @@ Triggered by an hourly Claude routine that polls the DD Content Queue table for 
 
 ## Execution steps
 
-1. **Fetch row** from Video Creation Queue by `recordId` (Airtable MCP)
+1. **Fetch row** from DD Content Queue by `recordId` (Airtable MCP)
 2. **Set** `Video Status = Generating` (Airtable MCP update)
-3. **Follow link:** read the linked DD Content Queue record ID from `Reference Images` field; fetch that row to get `Reference Image` attachment URLs and (optionally) its `Visual Theme`
-4. **Resolve** fal.ai model from `Tier` (see mapping above)
-5. **Build payload:**
+3. **Resolve** fal.ai model from `Tier` (see mapping above)
+4. **Build payload:**
    - `prompt` ← `Seedance Prompt` (+ `Visual Theme` appended if non-empty)
-   - `reference_images` ← attachment URLs from linked DD Content Queue `Reference Image` field (max 9)
+   - `reference_images` ← attachment URLs from `Reference Image` field (max 9)
    - `duration` ← `Duration`
    - `resolution` ← `Resolution`
-   - `aspect_ratio` ← inferred from linked DD Content Queue `Video Format` field (Reels/TikTok → 9:16, YouTube → 16:9, Square → 1:1)
-6. **POST** to `https://fal.run/<model-id>` with `Authorization: Key $FAL_KEY` (WebFetch or Bash curl)
-7. **Extract** `video.url` and `request_id` from response
-8. **Download** the video bytes (Bash curl → temp file)
-9. **Upload** to Drive in `DRIVE_OUTPUT_FOLDER_ID` as `<Content ID#>_<YYYYMMDD-HHMM>.mp4` (Drive MCP `create_file`)
-10. **Get** the Drive shareable URL
-11. **Write back** to Video Creation Queue (single update):
-    - `Video URL` ← Drive URL
+   - `aspect_ratio` ← inferred from `Video Format` (Reels/TikTok → 9:16, YouTube → 16:9, Square → 1:1)
+5. **POST** to `https://fal.run/<model-id>` with `Authorization: Key $FAL_KEY` (WebFetch or Bash curl)
+6. **Extract** `video.url` and `request_id` from response
+7. **Download** the video bytes (Bash curl → temp file)
+8. **Upload** to Drive in `DRIVE_OUTPUT_FOLDER_ID` as `<Title-slug>_<YYYYMMDD-HHMM>.mp4` (Drive MCP `create_file`)
+9. **Get** the Drive shareable URL
+10. **Write back** to DD Content Queue (single update):
+    - `Media URL` ← Drive URL
     - `Video Status` ← `Complete`
     - `Generation Run ID` ← fal `request_id`
 
