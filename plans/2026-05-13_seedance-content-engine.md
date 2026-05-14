@@ -16,19 +16,18 @@ Automate DDD video content generation. Airtable rows tagged `Status = Needs Medi
 | Decision | Choice | Rationale |
 |---|---|---|
 | Video model | **Seedance 2.0** (ByteDance) | Cinematic output, native audio, real-world physics |
-| API gateway | **fal.ai** (first 30 days) | Single key, minutes to set up; direct BytePlus is option B |
+| API gateway | **fal.ai** | Only US-accessible path to Seedance. BytePlus ModelArk is region-locked (APAC only); direct BytePlus is not viable from the US |
 | Model variant | `bytedance/seedance-2.0/reference-to-video` | Up to 9 reference images → brand consistency across product/model/mood shots |
 | Tier strategy | `/fast/` for volume, standard for hero pieces | Cost vs quality |
 | Trigger | Hourly Claude routine polls Airtable | Simplest; no webhook infra |
 | Skill scope | Full job (read row → fal → Drive → write back) | Single source of truth |
 | Skill name | `cowork:ddd-content-engine` | Matches handoff filename |
 
-## 30-day evaluation gate
+## Region note
 
-Day 28 reminder: review fal.ai spend + Seedance subscription usage. Decision tree:
-- **High volume + fal.ai costing more than Seedance sub** → migrate skill to BytePlus direct API (~1hr work), cancel either
-- **Light usage** → cancel Seedance direct subscription, stay on fal.ai
-- **Roughly equal** → stay on fal.ai for simplicity
+ModelArk (BytePlus's developer platform) is not available to US accounts as of 2026-05-13 — Seedance API access is region-locked to APAC. The direct Seedance subscription signed up earlier in this thread is consumer-tier and cannot be automated. **Cancel that subscription within its 30-day window** — it provides no value for this pipeline.
+
+fal.ai is the only viable US automation path for Seedance. We pay fal's per-second rate; there is no double-pay scenario.
 
 ---
 
@@ -130,7 +129,7 @@ Use `/schedule` to register:
 5. ⬜ Test the skill against 1 real row (`Tier = Basic`)
 6. ⬜ Register hourly routine via `/schedule` (polls `Video Status = Queued`)
 7. ⬜ Monitor first 3 runs, tune retry/error handling
-8. ⬜ **Day 28:** evaluation gate — decide fal.ai vs BytePlus direct
+8. ⬜ **Action item:** cancel the BytePlus/Seedance consumer subscription within its 30-day window (not usable for US automation)
 
 ---
 

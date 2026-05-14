@@ -92,6 +92,6 @@ Airtable + Drive MCPs are pre-authenticated at the workspace level.
 - `references/fal-api.md` — endpoint schemas, request/response shapes, gotchas
 - Plan: `plans/2026-05-13_seedance-content-engine.md`
 
-## Migration note
+## Region note
 
-Day 28 of Seedance subscription: evaluate fal.ai spend vs direct BytePlus. If migrating, only step 5 (the POST) changes — swap `fal.run` host + `FAL_KEY` auth for the BytePlus Ark endpoint + `BYTEPLUS_API_KEY`. Everything else (Airtable read/write, Drive upload, retry logic) is unchanged.
+BytePlus ModelArk (direct Seedance API) is not US-accessible as of 2026-05-13 — region-locked to APAC. fal.ai is the only viable US automation path for Seedance and will remain so unless that changes.
