@@ -81,11 +81,11 @@ Triggered by an hourly Claude routine that polls the DD Content Queue table for 
 
 ## Environment
 
-Loaded from `.env` (gitignored). See `.env.example`:
+Only two env vars (loaded from `.env`, gitignored):
 - `FAL_KEY` — fal.ai API key
 - `DRIVE_OUTPUT_FOLDER_ID` — target Drive folder
 
-Airtable + Drive MCPs are pre-authenticated at the workspace level.
+Airtable and Google Drive MCPs are pre-authenticated at the Claude Code workspace level — no API keys needed for those.
 
 ## References
 
