@@ -1,0 +1,119 @@
+{
+  "_description": "MKAI Safety Configuration - Error Handling & Fallbacks",
+  "_version": "1.0.0",
+
+  "circuit_breakers": {
+    "email_router": {
+      "failure_threshold": 5,
+      "recovery_timeout_minutes": 15,
+      "fallback_action": "queue_for_manual_review"
+    },
+    "calendar_manager": {
+      "failure_threshold": 3,
+      "recovery_timeout_minutes": 60,
+      "fallback_action": "skip_blocking_notify_owner"
+    },
+    "zoho_desk": {
+      "failure_threshold": 3,
+      "recovery_timeout_minutes": 30,
+      "fallback_action": "send_email_instead"
+    },
+    "social_posting": {
+      "failure_threshold": 2,
+      "recovery_timeout_minutes": 120,
+      "fallback_action": "mark_as_failed_notify"
+    }
+  },
+
+  "fallback_contacts": {
+    "primary": "support@mankindaitech.com",
+    "escalation": "support@mankindaitech.com",
+    "after_hours": "support@mankindaitech.com"
+  },
+
+  "alert_thresholds": {
+    "email_backlog": 50,
+    "failed_tasks_per_hour": 10,
+    "calendar_conflicts": 3,
+    "zoho_ticket_failures": 5
+  },
+
+  "graceful_degradation": {
+    "if_gmail_down": {
+      "action": "skip_email_check",
+      "notify": true,
+      "retry_after_minutes": 15
+    },
+    "if_calendar_down": {
+      "action": "skip_calendar_blocking",
+      "notify": true,
+      "retry_after_minutes": 60
+    },
+    "if_airtable_down": {
+      "action": "queue_locally",
+      "notify": true,
+      "retry_after_minutes": 10
+    },
+    "if_zoho_down": {
+      "action": "send_email_to_support",
+      "notify": true,
+      "retry_after_minutes": 30
+    }
+  },
+
+  "data_validation": {
+    "email": {
+      "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+      "max_length": 254
+    },
+    "url": {
+      "pattern": "^https?://",
+      "max_length": 2048
+    },
+    "task_id": {
+      "pattern": "^[a-z]+_[0-9]+_[a-z0-9]+$",
+      "max_length": 50
+    }
+  },
+
+  "content_safety": {
+    "spam_patterns": [
+      "unsubscribe",
+      "opt-out",
+      "viagra",
+      "casino",
+      "lottery",
+      "nigerian prince",
+      "bitcoin opportunity",
+      "click here now",
+      "act now",
+      "limited time"
+    ],
+    "suspicious_sender_patterns": [
+      "no-reply@",
+      "noreply@",
+      "donotreply@",
+      "mailer-daemon@"
+    ],
+    "auto_flag_keywords": [
+      "legal",
+      "lawsuit",
+      "attorney",
+      "subpoena",
+      "urgent action required"
+    ]
+  },
+
+  "backup_procedures": {
+    "airtable_backup": {
+      "frequency": "daily",
+      "retention": "30_days",
+      "method": "api_export"
+    },
+    "workflow_backup": {
+      "frequency": "on_change",
+      "retention": "90_days",
+      "method": "json_export"
+    }
+  }
+}

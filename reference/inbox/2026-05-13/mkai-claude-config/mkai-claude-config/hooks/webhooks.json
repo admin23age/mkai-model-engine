@@ -1,0 +1,202 @@
+{
+  "_description": "MKAI Webhook Registry - All webhook endpoints and configurations",
+  "_version": "1.0.0",
+  "_base_url": "https://agegroup.app.n8n.cloud",
+
+  "webhooks": {
+    "admin_supervisor": {
+      "path": "/webhook/mkai-admin-supervisor",
+      "method": "POST",
+      "workflow_name": "MKAI Admin Supervisor",
+      "workflow_id": null,
+      "active": false,
+      "description": "Main entry point for admin tasks - routes to workers",
+      "accepts": {
+        "task_type": ["email_check", "calendar_block", "social_post_ddd", "social_post_mkai", "website_maintenance"],
+        "data": "object",
+        "test": "boolean"
+      },
+      "returns": {
+        "task_id": "string",
+        "status": "string",
+        "worker": "string",
+        "timestamp": "ISO8601"
+      }
+    },
+
+    "email_router": {
+      "path": "/webhook/mkai-email-router",
+      "method": "POST",
+      "workflow_name": "MKAI Email Router",
+      "workflow_id": null,
+      "active": false,
+      "description": "Checks inbox, classifies emails, routes to appropriate destination",
+      "accepts": {
+        "test": "boolean",
+        "force_check": "boolean",
+        "max_emails": "number (default: 20)"
+      },
+      "returns": {
+        "emails_processed": "number",
+        "classifications": "object",
+        "status": "string"
+      }
+    },
+
+    "calendar_manager": {
+      "path": "/webhook/mkai-calendar-manager",
+      "method": "POST",
+      "workflow_name": "MKAI Calendar Manager",
+      "workflow_id": null,
+      "active": false,
+      "description": "Blocks calendar 48 hours in advance",
+      "accepts": {
+        "test": "boolean",
+        "days_ahead": "number (default: 2)",
+        "skip_existing": "boolean (default: true)"
+      },
+      "returns": {
+        "total_slots_checked": "number",
+        "existing_events": "number",
+        "new_blocks_created": "number",
+        "status": "string"
+      }
+    },
+
+    "marketing": {
+      "path": "/webhook/mkai-marketing",
+      "method": "POST",
+      "workflow_name": "MKAI Marketing Agent",
+      "workflow_id": null,
+      "active": false,
+      "description": "Handles social media posting and SEO reports",
+      "accepts": {
+        "task_type": ["social_post", "seo_report"],
+        "brand": ["dorothy_dean_designs", "mankind_ai"],
+        "test": "boolean"
+      },
+      "returns": {
+        "task_type": "string",
+        "brand": "string",
+        "status": "string",
+        "post_id": "string (if social post)"
+      }
+    },
+
+    "website_maintenance": {
+      "path": "/webhook/mkai-website-maintenance",
+      "method": "POST",
+      "workflow_name": "MKAI Website Maintenance Agent",
+      "workflow_id": null,
+      "active": false,
+      "description": "Handles website maintenance requests from existing clients",
+      "accepts": {
+        "client_email": "string (required)",
+        "client_name": "string",
+        "website_url": "string",
+        "description": "string (required)",
+        "priority": ["normal", "high"],
+        "test": "boolean"
+      },
+      "returns": {
+        "task_id": "string",
+        "client": "string",
+        "request_type": "string",
+        "priority": "string",
+        "status": "string"
+      }
+    },
+
+    "ops_supervisor": {
+      "path": "/webhook/mkai-ops-supervisor",
+      "method": "POST",
+      "workflow_name": "MKAI Ops Supervisor",
+      "workflow_id": null,
+      "active": false,
+      "description": "Main entry point for operations tasks",
+      "accepts": {
+        "task_type": ["crm_sync", "email_drip", "report_gen", "task_scheduler"],
+        "data": "object",
+        "test": "boolean"
+      },
+      "returns": {
+        "task_id": "string",
+        "status": "string",
+        "worker": "string"
+      }
+    },
+
+    "crm_sync": {
+      "path": "/webhook/mkai-crm-sync",
+      "method": "POST",
+      "workflow_name": "MKAI CRM Sync",
+      "workflow_id": null,
+      "active": false,
+      "description": "Bidirectional sync between Airtable and Zoho CRM",
+      "accepts": {
+        "direction": ["airtable_to_zoho", "zoho_to_airtable", "bidirectional"],
+        "test": "boolean"
+      },
+      "returns": {
+        "records_synced": "number",
+        "conflicts": "number",
+        "status": "string"
+      }
+    }
+  },
+
+  "schedules": {
+    "email_check": {
+      "cron": "*/15 * * * *",
+      "description": "Every 15 minutes",
+      "workflow": "email_router",
+      "timezone": "America/New_York"
+    },
+    "calendar_block": {
+      "cron": "0 6 * * *",
+      "description": "Daily at 6 AM EST",
+      "workflow": "calendar_manager",
+      "timezone": "America/New_York"
+    },
+    "social_ddd": {
+      "cron": "0 8 * * *",
+      "description": "Daily at 8 AM EST",
+      "workflow": "marketing",
+      "payload": {"task_type": "social_post", "brand": "dorothy_dean_designs"},
+      "timezone": "America/New_York"
+    },
+    "social_mkai": {
+      "cron": "0 9 * * *",
+      "description": "Daily at 9 AM EST",
+      "workflow": "marketing",
+      "payload": {"task_type": "social_post", "brand": "mankind_ai"},
+      "timezone": "America/New_York"
+    },
+    "seo_report": {
+      "cron": "0 7 * * 1",
+      "description": "Monday at 7 AM EST",
+      "workflow": "marketing",
+      "payload": {"task_type": "seo_report"},
+      "timezone": "America/New_York"
+    },
+    "crm_reconciliation": {
+      "cron": "0 */6 * * *",
+      "description": "Every 6 hours",
+      "workflow": "crm_sync",
+      "timezone": "America/New_York"
+    },
+    "overdue_check": {
+      "cron": "0 9 * * *",
+      "description": "Daily at 9 AM EST",
+      "workflow": "ops_supervisor",
+      "payload": {"task_type": "task_scheduler"},
+      "timezone": "America/New_York"
+    }
+  },
+
+  "health_check": {
+    "path": "/webhook/mkai-health",
+    "method": "GET",
+    "description": "Health check endpoint for monitoring"
+  }
+}

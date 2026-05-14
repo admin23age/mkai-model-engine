@@ -1,0 +1,230 @@
+{
+  "name": "MKAI Supervisor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-supervisor",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-supervisor"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MKAI Supervisor - Routes all incoming requests\n\nconst input = $input.first().json;\nconst body = input.body || input;\n\nconst taskId = `mkai_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;\n\n// Determine task type and destination\nlet destination = 'unknown';\nlet taskType = body.task_type || 'auto_classify';\n\n// If task_type provided, use it directly\nif (body.task_type) {\n  if (['calendar_block', 'email_route', 'maintenance'].includes(body.task_type)) {\n    destination = 'admin';\n  } else if (['lead', 'new_client', 'quote', 'discovery'].includes(body.task_type)) {\n    destination = 'sales';\n  } else if (['support', 'ticket', 'help', 'issue'].includes(body.task_type)) {\n    destination = 'customer_service';\n  } else if (['seo', 'social_post', 'marketing'].includes(body.task_type)) {\n    destination = 'marketing';\n  }\n}\n\n// Auto-classify based on content if no task_type\nif (destination === 'unknown' && body.content) {\n  const content = body.content.toLowerCase();\n  \n  if (content.includes('pricing') || content.includes('interested') || content.includes('quote')) {\n    destination = 'sales';\n    taskType = 'lead';\n  } else if (content.includes('help') || content.includes('issue') || content.includes('problem')) {\n    destination = 'customer_service';\n    taskType = 'support';\n  } else if (content.includes('maintenance') || content.includes('update my site')) {\n    destination = 'admin';\n    taskType = 'maintenance';\n  } else if (content.includes('seo') || content.includes('social')) {\n    destination = 'marketing';\n    taskType = 'marketing';\n  }\n}\n\nreturn {\n  task_id: taskId,\n  task_type: taskType,\n  destination: destination,\n  source: body.source || 'webhook',\n  data: body,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "classify-request",
+      "name": "Classify Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "admin", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Admin Agent"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "sales", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales Agent"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "customer_service", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Customer Service Agent"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "marketing", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Marketing Agent"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "Unknown"}
+        },
+        "options": {}
+      },
+      "id": "route-to-agent",
+      "name": "Route to Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-admin",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_id", "value": "={{ $json.task_id }}"},
+            {"name": "task_type", "value": "={{ $json.task_type }}"},
+            {"name": "data", "value": "={{ JSON.stringify($json.data) }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-admin",
+      "name": "Call Admin Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-sales",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_id", "value": "={{ $json.task_id }}"},
+            {"name": "task_type", "value": "={{ $json.task_type }}"},
+            {"name": "data", "value": "={{ JSON.stringify($json.data) }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-sales",
+      "name": "Call Sales Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-customer-service",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_id", "value": "={{ $json.task_id }}"},
+            {"name": "task_type", "value": "={{ $json.task_type }}"},
+            {"name": "data", "value": "={{ JSON.stringify($json.data) }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-cs",
+      "name": "Call Customer Service Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-marketing",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_id", "value": "={{ $json.task_id }}"},
+            {"name": "task_type", "value": "={{ $json.task_type }}"},
+            {"name": "data", "value": "={{ JSON.stringify($json.data) }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-marketing",
+      "name": "Call Marketing Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unknown destination handler\nreturn {\n  task_id: $json.task_id,\n  status: 'error',\n  error: 'Could not determine destination agent',\n  original_data: $json\n};"
+      },
+      "id": "unknown-handler",
+      "name": "Unknown Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 740]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log completion\nconst input = $input.first().json;\n\nreturn {\n  task_id: input.task_id || $('Classify Request').first().json.task_id,\n  status: 'routed',\n  destination: $('Classify Request').first().json.destination,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "log-result",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1160, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1380, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Classify Request", "type": "main", "index": 0}]]
+    },
+    "Classify Request": {
+      "main": [[{"node": "Route to Agent", "type": "main", "index": 0}]]
+    },
+    "Route to Agent": {
+      "main": [
+        [{"node": "Call Admin Agent", "type": "main", "index": 0}],
+        [{"node": "Call Sales Agent", "type": "main", "index": 0}],
+        [{"node": "Call Customer Service Agent", "type": "main", "index": 0}],
+        [{"node": "Call Marketing Agent", "type": "main", "index": 0}],
+        [{"node": "Unknown Handler", "type": "main", "index": 0}]
+      ]
+    },
+    "Call Admin Agent": {
+      "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
+    },
+    "Call Sales Agent": {
+      "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
+    },
+    "Call Customer Service Agent": {
+      "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
+    },
+    "Call Marketing Agent": {
+      "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
+    },
+    "Unknown Handler": {
+      "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
+    },
+    "Log Result": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": [{"name": "MKAI"}],
+  "pinData": {}
+}

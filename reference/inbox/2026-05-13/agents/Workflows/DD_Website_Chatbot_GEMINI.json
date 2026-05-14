@@ -1,0 +1,166 @@
+{
+  "name": "DD Website Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dd-website-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "dd-website-chat"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblcGnodbI33UjU67"
+        },
+        "returnAll": true
+      },
+      "id": "fetch-kb",
+      "name": "Fetch Knowledge Base",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build FAQ context from Knowledge Base\nconst kbItems = $input.all();\nconst webhookData = $('Chat Webhook').first().json;\nconst userMessage = webhookData.body?.message || webhookData.message || webhookData.body?.chatInput || webhookData.chatInput || '';\nconst sessionId = webhookData.body?.sessionId || webhookData.sessionId || `session_${Date.now()}`;\n\nlet faqContext = \"DOROTHY DEAN DESIGNS FAQ:\\n\\n\";\n\nfor (const item of kbItems) {\n  const q = item.json.Question || item.json.fields?.Question || '';\n  const a = item.json.Answer || item.json.fields?.Answer || '';\n  if (q && a) {\n    faqContext += `Q: ${q}\\nA: ${a}\\n\\n`;\n  }\n}\n\nreturn {\n  json: {\n    userMessage,\n    sessionId,\n    faqContext\n  }\n};"
+      },
+      "id": "build-context",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-1.5-flash"
+        },
+        "prompt": {
+          "values": {
+            "text": "={{ $json.faqContext }}\n\nCustomer Question: {{ $json.userMessage }}"
+          }
+        },
+        "options": {
+          "systemInstruction": "You are the Dorothy Dean Designs customer support assistant. You help customers with questions about orders, shipping, returns, sizing, and products. Be warm, helpful, and reflect our faith-based feminine brand values. Use the FAQ knowledge base to answer questions accurately. If you can't find the answer, offer to connect them with a human agent. Keep responses concise and friendly.",
+          "temperature": 0.7,
+          "maxOutputTokens": 500
+        }
+      },
+      "id": "gemini-chat",
+      "name": "Generate Response (Gemini)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst buildContext = $('Build Context').first().json;\n\nlet botResponse = 'I apologize, but I encountered an issue. Please try again or email support@dorothydeansdesigns.com.';\n\ntry {\n  botResponse = response.text || response.response?.text || response.candidates?.[0]?.content?.parts?.[0]?.text || botResponse;\n} catch (e) {\n  // Keep default error message\n}\n\nreturn {\n  json: {\n    response: botResponse,\n    sessionId: buildContext.sessionId,\n    userMessage: buildContext.userMessage\n  }\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblYjtfbAcQdVwRUT"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fldIkPsDO4MNqTPym": "={{ $json.sessionId }}",
+            "fldNlKfKBwRLRw1cF": "={{ $json.userMessage }}",
+            "fldMuFdw8y7IyfZAL": "={{ $json.response }}"
+          }
+        }
+      },
+      "id": "log-chat",
+      "name": "Log to Chat Log",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1340, 400],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"{{ $('Parse Response').item.json.response }}\",\n  \"sessionId\": \"{{ $('Parse Response').item.json.sessionId }}\"\n}"
+      },
+      "id": "respond",
+      "name": "Respond to Chat",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Chat Webhook": {
+      "main": [[{"node": "Fetch Knowledge Base", "type": "main", "index": 0}]]
+    },
+    "Fetch Knowledge Base": {
+      "main": [[{"node": "Build Context", "type": "main", "index": 0}]]
+    },
+    "Build Context": {
+      "main": [[{"node": "Generate Response (Gemini)", "type": "main", "index": 0}]]
+    },
+    "Generate Response (Gemini)": {
+      "main": [[{"node": "Parse Response", "type": "main", "index": 0}]]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {"node": "Respond to Chat", "type": "main", "index": 0},
+          {"node": "Log to Chat Log", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

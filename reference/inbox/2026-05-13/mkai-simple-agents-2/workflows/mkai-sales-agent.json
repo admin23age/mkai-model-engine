@@ -1,0 +1,139 @@
+{
+  "name": "MKAI Sales Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-sales",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-sales"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sales Agent - Handle leads and new clients\n\nconst input = $input.first().json;\nconst body = input.body || input;\n\nconst taskId = body.task_id || `sales_${Date.now()}`;\nconst taskType = body.task_type || 'lead';\n\n// Extract lead info\nconst lead = {\n  task_id: taskId,\n  task_type: taskType,\n  email: body.from?.email || body.from || body.email || '',\n  name: body.from?.name || body.name || '',\n  subject: body.subject || '',\n  message: body.snippet || body.message || body.description || '',\n  source: body.source || 'email',\n  timestamp: new Date().toISOString()\n};\n\n// Qualify the lead\nconst message = lead.message.toLowerCase();\nlet priority = 'normal';\nlet leadScore = 50;\n\n// High intent signals\nif (message.includes('pricing') || message.includes('quote')) {\n  priority = 'high';\n  leadScore += 20;\n}\nif (message.includes('asap') || message.includes('urgent') || message.includes('immediately')) {\n  priority = 'high';\n  leadScore += 15;\n}\nif (message.includes('budget') || message.includes('ready to start')) {\n  leadScore += 25;\n}\n\nlead.priority = priority;\nlead.lead_score = Math.min(leadScore, 100);\n\nreturn lead;"
+      },
+      "id": "qualify-lead",
+      "name": "Qualify Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {"__rl": true, "value": "", "mode": "id"},
+        "table": {"__rl": true, "value": "", "mode": "id"},
+        "fields": {
+          "fieldValues": {
+            "values": [
+              {"fieldId": "Name", "fieldValue": "={{ $json.name }}"},
+              {"fieldId": "Email", "fieldValue": "={{ $json.email }}"},
+              {"fieldId": "Subject", "fieldValue": "={{ $json.subject }}"},
+              {"fieldId": "Message", "fieldValue": "={{ $json.message }}"},
+              {"fieldId": "Source", "fieldValue": "={{ $json.source }}"},
+              {"fieldId": "Priority", "fieldValue": "={{ $json.priority }}"},
+              {"fieldId": "Lead Score", "fieldValue": "={{ $json.lead_score }}"},
+              {"fieldId": "Status", "fieldValue": "New"}
+            ]
+          }
+        }
+      },
+      "id": "save-to-airtable",
+      "name": "Save Lead to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [680, 300],
+      "credentials": {"airtableTokenApi": {"id": "", "name": "Airtable"}},
+      "notesInFlow": true,
+      "notes": "TODO: Set your Leads base and table IDs"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{"leftValue": "={{ $('Qualify Lead').first().json.priority }}", "rightValue": "high", "operator": {"type": "string", "operation": "equals"}}],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-priority",
+      "name": "High Priority?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "support@mankindaitech.com",
+        "subject": "=🔥 HIGH PRIORITY LEAD: {{ $('Qualify Lead').first().json.name }}",
+        "emailType": "html",
+        "message": "=<h2>🔥 High Priority Lead</h2>\n\n<p><strong>Name:</strong> {{ $('Qualify Lead').first().json.name }}</p>\n<p><strong>Email:</strong> {{ $('Qualify Lead').first().json.email }}</p>\n<p><strong>Lead Score:</strong> {{ $('Qualify Lead').first().json.lead_score }}/100</p>\n<p><strong>Subject:</strong> {{ $('Qualify Lead').first().json.subject }}</p>\n\n<h3>Message:</h3>\n<blockquote>{{ $('Qualify Lead').first().json.message }}</blockquote>\n\n<p><strong>Action Required:</strong> Follow up within 24 hours</p>\n\n<hr>\n<p><em>Captured by MKAI Sales Agent</em></p>"
+      },
+      "id": "alert-high-priority",
+      "name": "Alert High Priority",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 200],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Qualify Lead').first().json.email }}",
+        "subject": "Thanks for reaching out to Man Kind AI Tech!",
+        "emailType": "html",
+        "message": "=<h2>Thanks for Reaching Out!</h2>\n\n<p>Hi {{ $('Qualify Lead').first().json.name || 'there' }},</p>\n\n<p>Thank you for your interest in Man Kind AI Tech. We've received your inquiry and will get back to you within 24 hours.</p>\n\n<p>In the meantime, feel free to:</p>\n<ul>\n  <li><a href=\"https://calendly.com/mankindaitech-support/30min\">Schedule a free 30-minute discovery call</a></li>\n  <li><a href=\"https://www.mankindaitech.com\">Learn more about our services</a></li>\n</ul>\n\n<p>We look forward to speaking with you!</p>\n\n<p>Best regards,<br>\n<strong>Man Kind AI Tech</strong><br>\nsupport@mankindaitech.com</p>"
+      },
+      "id": "send-auto-reply",
+      "name": "Send Auto Reply",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 400],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion\nconst lead = $('Qualify Lead').first().json;\n\nreturn {\n  agent: 'sales',\n  status: 'completed',\n  lead_email: lead.email,\n  lead_score: lead.lead_score,\n  priority: lead.priority,\n  auto_reply_sent: true,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "complete",
+      "name": "Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1600, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Qualify Lead", "type": "main", "index": 0}]]},
+    "Qualify Lead": {"main": [[{"node": "Save Lead to Airtable", "type": "main", "index": 0}]]},
+    "Save Lead to Airtable": {"main": [[{"node": "High Priority?", "type": "main", "index": 0}]]},
+    "High Priority?": {
+      "main": [
+        [{"node": "Alert High Priority", "type": "main", "index": 0}],
+        [{"node": "Send Auto Reply", "type": "main", "index": 0}]
+      ]
+    },
+    "Alert High Priority": {"main": [[{"node": "Send Auto Reply", "type": "main", "index": 0}]]},
+    "Send Auto Reply": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Complete": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": [{"name": "MKAI"}, {"name": "Sales"}],
+  "pinData": {}
+}

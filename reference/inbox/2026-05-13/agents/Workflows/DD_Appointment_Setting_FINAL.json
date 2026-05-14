@@ -1,0 +1,142 @@
+{
+  "name": "DD Appointment Setting",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calendly-webhook",
+        "options": {}
+      },
+      "id": "calendly-webhook",
+      "name": "Calendly Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "calendly-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.body?.payload || $input.first().json.payload || $input.first().json;\n\nconst event = payload.event || 'invitee.created';\nconst invitee = payload.invitee || payload;\nconst eventDetails = payload.event_type || payload.scheduled_event || {};\n\nconst name = invitee.name || invitee.invitee_name || 'Guest';\nconst email = invitee.email || invitee.invitee_email || '';\nconst phone = invitee.text_reminder_number || '';\nconst eventType = eventDetails.name || eventDetails.event_type || 'Consultation';\nconst startTime = eventDetails.start_time || payload.event_start_time || new Date().toISOString();\nconst endTime = eventDetails.end_time || payload.event_end_time || '';\n\nreturn {\n  json: {\n    event,\n    name,\n    email,\n    phone,\n    eventType,\n    startTime,\n    endTime,\n    subject: `${eventType} with ${name}`\n  }\n};"
+      },
+      "id": "parse-calendly",
+      "name": "Parse Calendly Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblB84JpgAuO2hZOO"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fldmJSzvyyBsVOk5s": "={{ $json.subject }}",
+            "fldu3VMoe7oIVpt5J": "={{ $json.email }}",
+            "fld4Y5ACUAvyw4TIU": "={{ $json.phone }}",
+            "fldktFjqhalrI9rXF": "={{ $json.eventType }}",
+            "fldlZi8Az9IPNWZs6": "={{ $json.startTime }}",
+            "fldsNJ9aoixQUKCo9": "={{ $json.endTime }}"
+          }
+        }
+      },
+      "id": "save-appointment",
+      "name": "Save to Appointments",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [680, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendarId": "primary",
+        "start": "={{ $('Parse Calendly Data').item.json.startTime }}",
+        "end": "={{ $('Parse Calendly Data').item.json.endTime }}",
+        "additionalFields": {
+          "summary": "={{ $('Parse Calendly Data').item.json.subject }}",
+          "description": "Appointment booked via Calendly.\nEmail: {{ $('Parse Calendly Data').item.json.email }}\nPhone: {{ $('Parse Calendly Data').item.json.phone }}"
+        }
+      },
+      "id": "gcal-event",
+      "name": "Add to Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [900, 200],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "YOUR_GCAL_CREDENTIAL_ID",
+          "name": "Google Calendar OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Parse Calendly Data').item.json.email }}",
+        "subject": "Your Dorothy Dean Designs Appointment is Confirmed! ✨",
+        "emailType": "html",
+        "message": "<h2>Thank you for booking with us!</h2>\n<p>Hi {{ $('Parse Calendly Data').item.json.name }},</p>\n<p>Your <strong>{{ $('Parse Calendly Data').item.json.eventType }}</strong> has been confirmed.</p>\n<p>We look forward to connecting with you!</p>\n<p>Blessings,<br>Dorothy Dean Designs Team</p>"
+      },
+      "id": "send-email",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [900, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Appointment processed\"\n}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Calendly Webhook": {
+      "main": [[{"node": "Parse Calendly Data", "type": "main", "index": 0}]]
+    },
+    "Parse Calendly Data": {
+      "main": [[{"node": "Save to Appointments", "type": "main", "index": 0}]]
+    },
+    "Save to Appointments": {
+      "main": [
+        [
+          {"node": "Add to Google Calendar", "type": "main", "index": 0},
+          {"node": "Send Confirmation Email", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Add to Google Calendar": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    },
+    "Send Confirmation Email": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "DD Knowledge Base Search",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "knowledge-search",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Search Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "knowledge-search"
+    },
+    {
+      "parameters": {
+        "operation": "getMany",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblcGnodbI33UjU67"
+        },
+        "returnAll": true
+      },
+      "id": "fetch-kb",
+      "name": "Fetch Knowledge Base",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const kbItems = $input.all();\nconst query = ($('Search Webhook').first().json.body?.query || $('Search Webhook').first().json.query || '').toLowerCase();\n\nif (!query) {\n  return { json: { results: [], message: 'No search query provided' } };\n}\n\n// Simple keyword matching\nconst results = kbItems\n  .map(item => {\n    const question = (item.json.Question || item.json.fields?.Question || '').toLowerCase();\n    const answer = (item.json.Answer || item.json.fields?.Answer || '').toLowerCase();\n    const title = (item.json['Article Title'] || item.json.fields?.['Article Title'] || '').toLowerCase();\n    const category = item.json['FAQ Category'] || item.json.fields?.['FAQ Category'] || '';\n    \n    // Calculate relevance score\n    let score = 0;\n    const queryWords = query.split(' ');\n    \n    for (const word of queryWords) {\n      if (word.length < 3) continue;\n      if (question.includes(word)) score += 3;\n      if (title.includes(word)) score += 2;\n      if (answer.includes(word)) score += 1;\n    }\n    \n    return {\n      question: item.json.Question || item.json.fields?.Question,\n      answer: item.json.Answer || item.json.fields?.Answer,\n      category,\n      score\n    };\n  })\n  .filter(item => item.score > 0)\n  .sort((a, b) => b.score - a.score)\n  .slice(0, 5);\n\nreturn {\n  json: {\n    query,\n    results,\n    count: results.length\n  }\n};"
+      },
+      "id": "search-kb",
+      "name": "Search Knowledge Base",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "respond",
+      "name": "Return Results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Search Webhook": {
+      "main": [[{"node": "Fetch Knowledge Base", "type": "main", "index": 0}]]
+    },
+    "Fetch Knowledge Base": {
+      "main": [[{"node": "Search Knowledge Base", "type": "main", "index": 0}]]
+    },
+    "Search Knowledge Base": {
+      "main": [[{"node": "Return Results", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

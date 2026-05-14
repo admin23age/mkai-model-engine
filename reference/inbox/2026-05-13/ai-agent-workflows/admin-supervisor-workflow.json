@@ -1,0 +1,400 @@
+{
+  "name": "MKAI Admin Supervisor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-admin-supervisor",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-admin-supervisor"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "email-check-schedule",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 480]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "calendar-block-schedule",
+      "name": "Daily 6 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 640]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "ddd-social-schedule",
+      "name": "Daily 8 AM (DDD)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 800]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "mkai-social-schedule",
+      "name": "Daily 9 AM (MKAI)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 960]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin Supervisor Task Classifier\n\nconst input = $input.first().json;\nconst now = new Date();\n\nlet taskType = 'unknown';\nlet taskData = {};\nlet source = 'unknown';\n\n// Check trigger source\nif (input.body) {\n  // Webhook trigger\n  source = 'webhook';\n  taskType = input.body.task_type || 'manual';\n  taskData = input.body;\n} else {\n  // Scheduled trigger - determine by time\n  const hour = now.getHours();\n  const minute = now.getMinutes();\n  \n  if (hour === 6 && minute < 15) {\n    taskType = 'calendar_block';\n    source = 'schedule_6am';\n  } else if (hour === 8 && minute < 15) {\n    taskType = 'social_post_ddd';\n    source = 'schedule_8am';\n  } else if (hour === 9 && minute < 15) {\n    taskType = 'social_post_mkai';\n    source = 'schedule_9am';\n  } else {\n    // Default to email check (every 15 min)\n    taskType = 'email_check';\n    source = 'schedule_15min';\n  }\n  \n  taskData = { scheduled: true, trigger_time: now.toISOString() };\n}\n\nconst taskId = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\nreturn {\n  task_id: taskId,\n  task_type: taskType,\n  source: source,\n  task_data: taskData,\n  timestamp: now.toISOString(),\n  status: 'classifying'\n};"
+      },
+      "id": "classify-task",
+      "name": "Classify Admin Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 600]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.task_type }}",
+                    "rightValue": "email_check",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Email Router"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.task_type }}",
+                    "rightValue": "calendar_block",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Calendar Manager"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.task_type }}",
+                    "rightValue": "social_post_ddd",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Marketing DDD"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.task_type }}",
+                    "rightValue": "social_post_mkai",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Marketing MKAI"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.task_type }}",
+                    "rightValue": "website_maintenance",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Website Maintenance"
+            }
+          ],
+          "fallbackOutput": {
+            "renameOutput": true,
+            "outputKey": "Unknown"
+          }
+        },
+        "options": {}
+      },
+      "id": "route-task",
+      "name": "Route to Worker",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [740, 600]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "exec-email-router",
+      "name": "Execute Email Router",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1000, 300],
+      "notesInFlow": true,
+      "notes": "Replace with Email Router workflow ID after creation"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "exec-calendar-manager",
+      "name": "Execute Calendar Manager",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1000, 460],
+      "notesInFlow": true,
+      "notes": "Replace with Calendar Manager workflow ID after creation"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "exec-marketing-ddd",
+      "name": "Execute Marketing (DDD)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1000, 620],
+      "notesInFlow": true,
+      "notes": "Replace with Marketing workflow ID - DDD social post"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "exec-marketing-mkai",
+      "name": "Execute Marketing (MKAI)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1000, 780],
+      "notesInFlow": true,
+      "notes": "Replace with Marketing workflow ID - MKAI social post"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "exec-website-maintenance",
+      "name": "Execute Website Maintenance",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [1000, 940],
+      "notesInFlow": true,
+      "notes": "Replace with Website Maintenance workflow ID after creation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unknown task handler\nconst input = $input.first().json;\n\nreturn {\n  ...input,\n  worker: 'none',\n  status: 'error',\n  error: `Unknown task type: ${input.task_type}`,\n  valid_types: ['email_check', 'calendar_block', 'social_post_ddd', 'social_post_mkai', 'website_maintenance']\n};"
+      },
+      "id": "unknown-handler",
+      "name": "Unknown Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 1100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log admin task completion\nconst input = $input.first().json;\n\nconst logEntry = {\n  task_id: input.task_id,\n  task_type: input.task_type,\n  worker: input.worker || 'admin_supervisor',\n  status: input.status || 'completed',\n  source: input.source,\n  timestamp: new Date().toISOString(),\n  details: input\n};\n\nconsole.log('Admin Supervisor Log:', JSON.stringify(logEntry, null, 2));\n\nreturn logEntry;"
+      },
+      "id": "log-completion",
+      "name": "Log Completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1260, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1480, 600]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]
+    },
+    "Every 15 Minutes": {
+      "main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]
+    },
+    "Daily 6 AM": {
+      "main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]
+    },
+    "Daily 8 AM (DDD)": {
+      "main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]
+    },
+    "Daily 9 AM (MKAI)": {
+      "main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]
+    },
+    "Classify Admin Task": {
+      "main": [[{"node": "Route to Worker", "type": "main", "index": 0}]]
+    },
+    "Route to Worker": {
+      "main": [
+        [{"node": "Execute Email Router", "type": "main", "index": 0}],
+        [{"node": "Execute Calendar Manager", "type": "main", "index": 0}],
+        [{"node": "Execute Marketing (DDD)", "type": "main", "index": 0}],
+        [{"node": "Execute Marketing (MKAI)", "type": "main", "index": 0}],
+        [{"node": "Execute Website Maintenance", "type": "main", "index": 0}],
+        [{"node": "Unknown Task", "type": "main", "index": 0}]
+      ]
+    },
+    "Execute Email Router": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Execute Calendar Manager": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Execute Marketing (DDD)": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Execute Marketing (MKAI)": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Execute Website Maintenance": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Unknown Task": {
+      "main": [[{"node": "Log Completion", "type": "main", "index": 0}]]
+    },
+    "Log Completion": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [{"name": "MKAI"}, {"name": "Admin"}],
+  "triggerCount": 5,
+  "pinData": {}
+}

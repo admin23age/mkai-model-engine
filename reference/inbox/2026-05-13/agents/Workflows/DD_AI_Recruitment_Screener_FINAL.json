@@ -1,0 +1,128 @@
+{
+  "name": "DD AI Recruitment Screener",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-submission",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Resume Submission Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "resume-submission"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json.body || $input.first().json;\n\nconst name = input.name || input.candidateName || 'Unknown';\nconst email = input.email || '';\nconst phone = input.phone || '';\nconst resumeText = input.resumeText || input.resume || '';\nconst position = input.position || input.role || 'General';\nconst experience = input.yearsExperience || input.experience || 0;\n\nreturn {\n  json: {\n    name,\n    email,\n    phone,\n    resumeText,\n    position,\n    experience,\n    appliedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "normalize-data",
+      "name": "Normalize Candidate Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a recruitment screener for Dorothy Dean Designs, a faith-based feminine clothing brand. Evaluate candidates for cultural fit and skills alignment.\\n\\nRespond ONLY with valid JSON in this exact format:\\n{\\n  \\\"fitScore\\\": 85,\\n  \\\"experienceSummary\\\": \\\"Brief summary of relevant experience\\\",\\n  \\\"keySkills\\\": \\\"List of relevant skills\\\",\\n  \\\"strengths\\\": \\\"What makes this candidate stand out\\\",\\n  \\\"concerns\\\": \\\"Any red flags or gaps\\\",\\n  \\\"cultureFit\\\": \\\"Assessment of alignment with faith-based brand values\\\",\\n  \\\"recommendedAction\\\": \\\"ADVANCE|HOLD|DECLINE\\\"\\n}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Screen this candidate for the {{ $json.position }} position:\\n\\nName: {{ $json.name }}\\nExperience: {{ $json.experience }} years\\n\\nResume:\\n{{ $json.resumeText }}\"\n    }\n  ],\n  \"temperature\": 0.3,\n  \"max_tokens\": 800\n}"
+      },
+      "id": "screen-resume",
+      "name": "Screen Resume with AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst candidateData = $('Normalize Candidate Data').first().json;\n\nlet screening;\ntry {\n  const content = response.choices?.[0]?.message?.content || '{}';\n  const cleanContent = content.replace(/```json|```/g, '').trim();\n  screening = JSON.parse(cleanContent);\n} catch (e) {\n  screening = {\n    fitScore: 0,\n    experienceSummary: 'Unable to analyze',\n    keySkills: '',\n    strengths: '',\n    concerns: 'Manual review required',\n    cultureFit: 'Unknown',\n    recommendedAction: 'HOLD'\n  };\n}\n\nreturn {\n  json: {\n    ...candidateData,\n    ...screening\n  }\n};"
+      },
+      "id": "parse-screening",
+      "name": "Parse Screening",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblBLmrzwkKyJlEcd"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fldhX2sdoyEYYtT9o": "={{ $json.name }}",
+            "fldk7ZD2zldBgwPWt": "={{ $json.email }}",
+            "fldBq1CzDoQ0D88Fr": "={{ $json.phone }}",
+            "fld5GFIXq6iqOqpmA": "={{ $json.experience }}",
+            "fldftn0QI1gM1nbnH": "={{ $json.experienceSummary }}",
+            "fldwDBSPwNOQqpBJW": "Fit Score: {{ $json.fitScore }}\\n\\nKey Skills: {{ $json.keySkills }}\\n\\nStrengths: {{ $json.strengths }}\\n\\nConcerns: {{ $json.concerns }}\\n\\nCulture Fit: {{ $json.cultureFit }}",
+            "fldfVglJm7uvmkq8y": "={{ $json.recommendedAction }}"
+          }
+        }
+      },
+      "id": "save-candidate",
+      "name": "Save to Candidates",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1120, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"candidate\": \"{{ $('Normalize Candidate Data').item.json.name }}\",\n  \"fitScore\": {{ $('Parse Screening').item.json.fitScore }},\n  \"recommendation\": \"{{ $('Parse Screening').item.json.recommendedAction }}\"\n}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Resume Submission Webhook": {
+      "main": [[{"node": "Normalize Candidate Data", "type": "main", "index": 0}]]
+    },
+    "Normalize Candidate Data": {
+      "main": [[{"node": "Screen Resume with AI", "type": "main", "index": 0}]]
+    },
+    "Screen Resume with AI": {
+      "main": [[{"node": "Parse Screening", "type": "main", "index": 0}]]
+    },
+    "Parse Screening": {
+      "main": [[{"node": "Save to Candidates", "type": "main", "index": 0}]]
+    },
+    "Save to Candidates": {
+      "main": [[{"node": "Respond", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

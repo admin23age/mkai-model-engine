@@ -1,0 +1,137 @@
+{
+  "name": "MKAI Customer Service Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-customer-service",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-customer-service"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Customer Service Agent - Handle support requests\n\nconst input = $input.first().json;\nconst body = input.body || input;\n\nconst taskId = body.task_id || `support_${Date.now()}`;\n\n// Parse support request\nconst ticket = {\n  task_id: taskId,\n  email: body.from?.email || body.from || body.email || '',\n  name: body.from?.name || body.name || '',\n  subject: body.subject || 'Support Request',\n  description: body.snippet || body.message || body.description || '',\n  source: body.source || 'email',\n  timestamp: new Date().toISOString()\n};\n\n// Determine priority based on content\nconst desc = ticket.description.toLowerCase();\nlet priority = 'Medium';\nlet category = 'General';\n\n// Priority detection\nif (desc.includes('urgent') || desc.includes('emergency') || desc.includes('down') || desc.includes('broken')) {\n  priority = 'High';\n}\nif (desc.includes('asap') || desc.includes('critical')) {\n  priority = 'Urgent';\n}\n\n// Category detection\nif (desc.includes('website') || desc.includes('site') || desc.includes('page')) {\n  category = 'Website';\n} else if (desc.includes('email') || desc.includes('gmail')) {\n  category = 'Email';\n} else if (desc.includes('automation') || desc.includes('workflow') || desc.includes('n8n')) {\n  category = 'Automation';\n} else if (desc.includes('billing') || desc.includes('invoice') || desc.includes('payment')) {\n  category = 'Billing';\n}\n\nticket.priority = priority;\nticket.category = category;\n\nreturn ticket;"
+      },
+      "id": "parse-request",
+      "name": "Parse Support Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "operation": "create",
+        "departmentId": "",
+        "contactId": "",
+        "subject": "={{ $json.subject }}",
+        "description": "={{ $json.description }}",
+        "additionalFields": {
+          "email": "={{ $json.email }}",
+          "priority": "={{ $json.priority }}",
+          "channel": "Email",
+          "category": "={{ $json.category }}"
+        }
+      },
+      "id": "create-zoho-ticket",
+      "name": "Create Zoho Desk Ticket",
+      "type": "n8n-nodes-base.zohoDeskApi",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {"zohoOAuth2Api": {"id": "", "name": "Zoho Desk"}},
+      "notesInFlow": true,
+      "notes": "TODO: Set your Zoho Desk department ID"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {"leftValue": "={{ $('Parse Support Request').first().json.priority }}", "rightValue": "Urgent", "operator": {"type": "string", "operation": "equals"}},
+            {"leftValue": "={{ $('Parse Support Request').first().json.priority }}", "rightValue": "High", "operator": {"type": "string", "operation": "equals"}}
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-urgent",
+      "name": "Urgent or High?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "support@mankindaitech.com",
+        "subject": "=🚨 URGENT SUPPORT: {{ $('Parse Support Request').first().json.category }} - {{ $('Parse Support Request').first().json.subject }}",
+        "emailType": "html",
+        "message": "=<h2>🚨 Urgent Support Request</h2>\n\n<p><strong>From:</strong> {{ $('Parse Support Request').first().json.name }} ({{ $('Parse Support Request').first().json.email }})</p>\n<p><strong>Priority:</strong> {{ $('Parse Support Request').first().json.priority }}</p>\n<p><strong>Category:</strong> {{ $('Parse Support Request').first().json.category }}</p>\n<p><strong>Subject:</strong> {{ $('Parse Support Request').first().json.subject }}</p>\n\n<h3>Description:</h3>\n<blockquote>{{ $('Parse Support Request').first().json.description }}</blockquote>\n\n<p><strong>Zoho Ticket Created:</strong> Yes</p>\n\n<hr>\n<p><em>MKAI Customer Service Agent</em></p>"
+      },
+      "id": "alert-urgent",
+      "name": "Alert Urgent",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 200],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Parse Support Request').first().json.email }}",
+        "subject": "=✅ Support Ticket Created: {{ $('Parse Support Request').first().json.subject }}",
+        "emailType": "html",
+        "message": "=<h2>We've Received Your Support Request</h2>\n\n<p>Hi {{ $('Parse Support Request').first().json.name || 'there' }},</p>\n\n<p>Thank you for reaching out. We've created a support ticket for your request and our team will get back to you as soon as possible.</p>\n\n<h3>Ticket Details:</h3>\n<ul>\n  <li><strong>Subject:</strong> {{ $('Parse Support Request').first().json.subject }}</li>\n  <li><strong>Priority:</strong> {{ $('Parse Support Request').first().json.priority }}</li>\n  <li><strong>Category:</strong> {{ $('Parse Support Request').first().json.category }}</li>\n</ul>\n\n<h3>Your Request:</h3>\n<blockquote>{{ $('Parse Support Request').first().json.description }}</blockquote>\n\n<h3>What's Next?</h3>\n<p>Our support team typically responds within:</p>\n<ul>\n  <li><strong>Urgent:</strong> 2-4 hours</li>\n  <li><strong>High:</strong> 4-8 hours</li>\n  <li><strong>Medium:</strong> 24 hours</li>\n</ul>\n\n<p>If you have additional information to add, simply reply to this email.</p>\n\n<p>Best regards,<br>\n<strong>Man Kind AI Tech Support</strong><br>\nsupport@mankindaitech.com</p>"
+      },
+      "id": "send-confirmation",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 400],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion\nconst ticket = $('Parse Support Request').first().json;\n\nreturn {\n  agent: 'customer_service',\n  status: 'completed',\n  ticket_email: ticket.email,\n  ticket_priority: ticket.priority,\n  ticket_category: ticket.category,\n  zoho_ticket_created: true,\n  confirmation_sent: true,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "complete",
+      "name": "Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1600, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Parse Support Request", "type": "main", "index": 0}]]},
+    "Parse Support Request": {"main": [[{"node": "Create Zoho Desk Ticket", "type": "main", "index": 0}]]},
+    "Create Zoho Desk Ticket": {"main": [[{"node": "Urgent or High?", "type": "main", "index": 0}]]},
+    "Urgent or High?": {
+      "main": [
+        [{"node": "Alert Urgent", "type": "main", "index": 0}],
+        [{"node": "Send Confirmation", "type": "main", "index": 0}]
+      ]
+    },
+    "Alert Urgent": {"main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]},
+    "Send Confirmation": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Complete": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": [{"name": "MKAI"}, {"name": "Support"}],
+  "pinData": {}
+}

@@ -1,0 +1,378 @@
+{
+  "name": "MKAI Admin Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-admin",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-admin"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 6 * * *"}]
+        }
+      },
+      "id": "daily-6am",
+      "name": "Daily 6 AM (Calendar Block)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 480]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "minutes", "minutesInterval": 15}]
+        }
+      },
+      "id": "every-15min",
+      "name": "Every 15 Min (Email Check)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 640]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin Agent - Classify task type\n\nconst input = $input.first().json;\nconst body = input.body || input;\nconst now = new Date();\nconst hour = now.getHours();\n\nlet taskType = body.task_type || 'auto';\n\n// Auto-determine based on trigger\nif (taskType === 'auto') {\n  if (hour === 6) {\n    taskType = 'calendar_block';\n  } else {\n    taskType = 'email_route';\n  }\n}\n\nreturn {\n  task_id: body.task_id || `admin_${Date.now()}`,\n  task_type: taskType,\n  data: body.data ? JSON.parse(body.data) : body,\n  timestamp: now.toISOString()\n};"
+      },
+      "id": "classify-task",
+      "name": "Classify Admin Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.task_type }}", "rightValue": "calendar_block", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Calendar Block"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.task_type }}", "rightValue": "email_route", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Email Route"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.task_type }}", "rightValue": "maintenance", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Maintenance"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "Email Route"}
+        },
+        "options": {}
+      },
+      "id": "route-task",
+      "name": "Route Task",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calendar Block - 48 hours ahead\n// Business hours: 9 AM - 5 PM EST, Monday-Friday\n\nconst now = new Date();\nconst slots = [];\n\n// Start from tomorrow 9 AM\nconst start = new Date(now);\nstart.setDate(start.getDate() + 1);\nstart.setHours(9, 0, 0, 0);\n\n// End 48 hours from now at 5 PM\nconst end = new Date(now);\nend.setDate(end.getDate() + 2);\nend.setHours(17, 0, 0, 0);\n\nlet current = new Date(start);\n\nwhile (current < end) {\n  const hour = current.getHours();\n  const day = current.getDay();\n  \n  // Skip weekends, only business hours\n  if (day >= 1 && day <= 5 && hour >= 9 && hour < 17) {\n    slots.push({\n      start: current.toISOString(),\n      end: new Date(current.getTime() + 30 * 60 * 1000).toISOString(),\n      summary: '🔒 Focus Time (Auto-blocked)',\n      description: 'Auto-blocked by MKAI Admin Agent'\n    });\n  }\n  current.setMinutes(current.getMinutes() + 30);\n}\n\nreturn {\n  action: 'calendar_block',\n  slots_to_create: slots.length,\n  slots: slots,\n  timestamp: now.toISOString()\n};"
+      },
+      "id": "calc-calendar-blocks",
+      "name": "Calculate Calendar Blocks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 200]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "calendar": {"__rl": true, "value": "primary", "mode": "list"},
+        "returnAll": false,
+        "limit": 100,
+        "options": {
+          "timeMin": "={{ $json.slots[0]?.start }}",
+          "timeMax": "={{ $json.slots[$json.slots.length - 1]?.end }}",
+          "singleEvents": true
+        }
+      },
+      "id": "get-existing-events",
+      "name": "Get Existing Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [1200, 200],
+      "credentials": {"googleCalendarOAuth2Api": {"id": "", "name": "Google Calendar"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter out slots that overlap with existing events\nconst blockData = $('Calculate Calendar Blocks').first().json;\nconst existingEvents = $('Get Existing Events').all().map(e => e.json);\n\nconst freeSlots = blockData.slots.filter(slot => {\n  const slotStart = new Date(slot.start);\n  const slotEnd = new Date(slot.end);\n  \n  return !existingEvents.some(event => {\n    const eventStart = new Date(event.start?.dateTime || event.start?.date);\n    const eventEnd = new Date(event.end?.dateTime || event.end?.date);\n    return slotStart < eventEnd && slotEnd > eventStart;\n  });\n});\n\nreturn freeSlots.map(slot => ({ json: slot }));"
+      },
+      "id": "filter-free-slots",
+      "name": "Filter Free Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 200]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendar": {"__rl": true, "value": "primary", "mode": "list"},
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "additionalFields": {
+          "summary": "={{ $json.summary }}",
+          "description": "={{ $json.description }}",
+          "colorId": "8"
+        }
+      },
+      "id": "create-blocks",
+      "name": "Create Calendar Blocks",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [1640, 200],
+      "credentials": {"googleCalendarOAuth2Api": {"id": "", "name": "Google Calendar"}}
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "filters": {"readStatus": "unread", "receivedAfter": "={{ DateTime.now().minus({hours: 1}).toISO() }}"},
+        "options": {}
+      },
+      "id": "get-unread-emails",
+      "name": "Get Unread Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [980, 400],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Classify each email and determine routing\nconst emails = $input.all();\nconst results = [];\n\nconst salesPatterns = ['pricing', 'price', 'cost', 'quote', 'interested', 'services', 'consultation'];\nconst supportPatterns = ['help', 'issue', 'problem', 'broken', 'not working', 'error', 'bug'];\nconst maintenancePatterns = ['update', 'change', 'edit', 'maintenance', 'website change'];\nconst spamPatterns = ['unsubscribe', 'opt-out', 'viagra', 'casino', 'lottery'];\n\nfor (const item of emails) {\n  const email = item.json;\n  const subject = (email.subject || '').toLowerCase();\n  const snippet = (email.snippet || '').toLowerCase();\n  const content = subject + ' ' + snippet;\n  \n  let destination = 'owner';\n  let classification = 'unknown';\n  \n  // Check patterns\n  if (spamPatterns.some(p => content.includes(p))) {\n    destination = 'archive';\n    classification = 'spam';\n  } else if (salesPatterns.some(p => content.includes(p))) {\n    destination = 'sales';\n    classification = 'sales_inquiry';\n  } else if (supportPatterns.some(p => content.includes(p))) {\n    destination = 'customer_service';\n    classification = 'support_request';\n  } else if (maintenancePatterns.some(p => content.includes(p))) {\n    destination = 'maintenance';\n    classification = 'maintenance_request';\n  }\n  \n  results.push({\n    email_id: email.id,\n    from: email.from,\n    subject: email.subject,\n    snippet: email.snippet,\n    classification: classification,\n    destination: destination\n  });\n}\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "id": "classify-emails",
+      "name": "Classify Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "sales", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "To Sales"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "customer_service", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "To Support"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "archive", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Archive"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "To Owner"}
+        },
+        "options": {}
+      },
+      "id": "route-emails",
+      "name": "Route Emails",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1420, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-sales",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_type", "value": "lead"},
+            {"name": "email_id", "value": "={{ $json.email_id }}"},
+            {"name": "from", "value": "={{ $json.from }}"},
+            {"name": "subject", "value": "={{ $json.subject }}"},
+            {"name": "snippet", "value": "={{ $json.snippet }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "forward-to-sales",
+      "name": "Forward to Sales",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://agegroup.app.n8n.cloud/webhook/mkai-customer-service",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "task_type", "value": "support"},
+            {"name": "email_id", "value": "={{ $json.email_id }}"},
+            {"name": "from", "value": "={{ $json.from }}"},
+            {"name": "subject", "value": "={{ $json.subject }}"},
+            {"name": "snippet", "value": "={{ $json.snippet }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "forward-to-support",
+      "name": "Forward to Support",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 400]
+    },
+    {
+      "parameters": {
+        "operation": "addLabel",
+        "messageId": "={{ $json.email_id }}",
+        "labelIds": ["TRASH"]
+      },
+      "id": "archive-spam",
+      "name": "Archive Spam",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1680, 520],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "sendTo": "support@mankindaitech.com",
+        "subject": "=📬 Review: {{ $json.classification }} - {{ $json.subject }}",
+        "emailType": "text",
+        "message": "=New email needs review:\n\nFrom: {{ $json.from }}\nSubject: {{ $json.subject }}\nClassification: {{ $json.classification }}\n\nSnippet: {{ $json.snippet }}"
+      },
+      "id": "notify-owner",
+      "name": "Notify Owner",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1680, 640],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle maintenance request\nconst input = $input.first().json;\n\nreturn {\n  action: 'maintenance_request',\n  client_email: input.data?.client_email || input.data?.from,\n  description: input.data?.description || input.data?.snippet,\n  status: 'received',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "handle-maintenance",
+      "name": "Handle Maintenance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 600]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.client_email }}",
+        "subject": "✅ Maintenance Request Received",
+        "emailType": "html",
+        "message": "=<h2>We've Received Your Request</h2>\n<p>Thank you for reaching out. We've received your website maintenance request and will get back to you within 24-48 hours.</p>\n<p><strong>Your Request:</strong></p>\n<blockquote>{{ $json.description }}</blockquote>\n<p>Best regards,<br>Man Kind AI Tech</p>"
+      },
+      "id": "send-maintenance-confirmation",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1200, 600],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion status\nreturn {\n  agent: 'admin',\n  status: 'completed',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "complete",
+      "name": "Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1900, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2100, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]},
+    "Daily 6 AM (Calendar Block)": {"main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]},
+    "Every 15 Min (Email Check)": {"main": [[{"node": "Classify Admin Task", "type": "main", "index": 0}]]},
+    "Classify Admin Task": {"main": [[{"node": "Route Task", "type": "main", "index": 0}]]},
+    "Route Task": {
+      "main": [
+        [{"node": "Calculate Calendar Blocks", "type": "main", "index": 0}],
+        [{"node": "Get Unread Emails", "type": "main", "index": 0}],
+        [{"node": "Handle Maintenance", "type": "main", "index": 0}],
+        [{"node": "Get Unread Emails", "type": "main", "index": 0}]
+      ]
+    },
+    "Calculate Calendar Blocks": {"main": [[{"node": "Get Existing Events", "type": "main", "index": 0}]]},
+    "Get Existing Events": {"main": [[{"node": "Filter Free Slots", "type": "main", "index": 0}]]},
+    "Filter Free Slots": {"main": [[{"node": "Create Calendar Blocks", "type": "main", "index": 0}]]},
+    "Create Calendar Blocks": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Get Unread Emails": {"main": [[{"node": "Classify Emails", "type": "main", "index": 0}]]},
+    "Classify Emails": {"main": [[{"node": "Route Emails", "type": "main", "index": 0}]]},
+    "Route Emails": {
+      "main": [
+        [{"node": "Forward to Sales", "type": "main", "index": 0}],
+        [{"node": "Forward to Support", "type": "main", "index": 0}],
+        [{"node": "Archive Spam", "type": "main", "index": 0}],
+        [{"node": "Notify Owner", "type": "main", "index": 0}]
+      ]
+    },
+    "Forward to Sales": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Forward to Support": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Archive Spam": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Notify Owner": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Handle Maintenance": {"main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]},
+    "Send Confirmation": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Complete": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": [{"name": "MKAI"}, {"name": "Admin"}],
+  "pinData": {}
+}

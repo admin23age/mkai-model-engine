@@ -1,0 +1,283 @@
+{
+  "name": "MKAI Marketing Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-marketing",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-marketing"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 8 * * *"}]
+        }
+      },
+      "id": "daily-8am",
+      "name": "Daily 8 AM (DDD Social)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 480]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 9 * * *"}]
+        }
+      },
+      "id": "daily-9am",
+      "name": "Daily 9 AM (MKAI Social)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 640]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 7 * * 1"}]
+        }
+      },
+      "id": "monday-7am",
+      "name": "Monday 7 AM (SEO Report)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Marketing Agent - Determine task type\n\nconst input = $input.first().json;\nconst body = input.body || input;\nconst now = new Date();\nconst hour = now.getHours();\nconst day = now.getDay(); // 0=Sun, 1=Mon\n\nlet taskType = body.task_type || 'auto';\nlet brand = body.brand || '';\n\n// Auto-determine based on schedule\nif (taskType === 'auto') {\n  if (day === 1 && hour === 7) {\n    taskType = 'seo_report';\n  } else if (hour === 8) {\n    taskType = 'social_post';\n    brand = 'dorothy_dean_designs';\n  } else if (hour === 9) {\n    taskType = 'social_post';\n    brand = 'mankind_ai';\n  } else {\n    taskType = body.task_type || 'social_post';\n    brand = body.brand || 'mankind_ai';\n  }\n}\n\nreturn {\n  task_id: body.task_id || `mkt_${Date.now()}`,\n  task_type: taskType,\n  brand: brand,\n  data: body,\n  timestamp: now.toISOString()\n};"
+      },
+      "id": "classify-task",
+      "name": "Classify Marketing Task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 500]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [
+                  {"leftValue": "={{ $json.task_type }}", "rightValue": "social_post", "operator": {"type": "string", "operation": "equals"}},
+                  {"leftValue": "={{ $json.brand }}", "rightValue": "dorothy_dean_designs", "operator": {"type": "string", "operation": "equals"}}
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DDD Social"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [
+                  {"leftValue": "={{ $json.task_type }}", "rightValue": "social_post", "operator": {"type": "string", "operation": "equals"}},
+                  {"leftValue": "={{ $json.brand }}", "rightValue": "mankind_ai", "operator": {"type": "string", "operation": "equals"}}
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MKAI Social"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.task_type }}", "rightValue": "seo_report", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SEO Report"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "MKAI Social"}
+        },
+        "options": {}
+      },
+      "id": "route-task",
+      "name": "Route Task",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [720, 500]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {"__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id"},
+        "table": {"__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id"},
+        "options": {
+          "filterByFormula": "AND({Status} = 'Ready to Post', {Brand} = 'Dorothy Dean Designs')",
+          "limit": 1
+        }
+      },
+      "id": "get-ddd-content",
+      "name": "Get DDD Content",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [980, 300],
+      "credentials": {"airtableTokenApi": {"id": "", "name": "Airtable"}}
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": {"__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id"},
+        "table": {"__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id"},
+        "options": {
+          "filterByFormula": "AND({Status} = 'Ready to Post', {Brand} = 'Man Kind AI')",
+          "limit": 1
+        }
+      },
+      "id": "get-mkai-content",
+      "name": "Get MKAI Content",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [980, 480],
+      "credentials": {"airtableTokenApi": {"id": "", "name": "Airtable"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process social content for posting\nconst content = $input.first().json;\n\nif (!content || !content.fields) {\n  return {\n    status: 'skipped',\n    reason: 'No ready content found',\n    brand: $('Classify Marketing Task').first().json.brand\n  };\n}\n\nconst post = content.fields;\n\nreturn {\n  record_id: content.id,\n  brand: post.Brand || $('Classify Marketing Task').first().json.brand,\n  caption: post.Caption || post.Content || '',\n  image_url: post.Image?.[0]?.url || null,\n  hashtags: post.Hashtags || '',\n  status: 'ready_to_post'\n};"
+      },
+      "id": "process-content",
+      "name": "Process Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Placeholder for social media posting\n// TODO: Replace with Meta Business Suite API\n\nconst post = $input.first().json;\n\nif (post.status === 'skipped') {\n  return post;\n}\n\n// In production, this would:\n// 1. Upload image to Meta\n// 2. Create post via Graph API\n// 3. Return post ID\n\nreturn {\n  ...post,\n  status: 'posted_placeholder',\n  message: 'PLACEHOLDER - Connect Meta Business Suite API for real posting',\n  posted_at: new Date().toISOString()\n};"
+      },
+      "id": "post-social",
+      "name": "Post to Social (Placeholder)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 400],
+      "notesInFlow": true,
+      "notes": "TODO: Replace with Meta Business Suite API"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {"__rl": true, "value": "appr0OjO1x803LE3z", "mode": "id"},
+        "table": {"__rl": true, "value": "tblqK7VyoP7vOT8Ux", "mode": "id"},
+        "id": "={{ $json.record_id }}",
+        "fields": {
+          "fieldValues": {
+            "values": [
+              {"fieldId": "Status", "fieldValue": "Posted"},
+              {"fieldId": "Posted At", "fieldValue": "={{ $json.posted_at }}"}
+            ]
+          }
+        }
+      },
+      "id": "update-airtable",
+      "name": "Update Airtable Status",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1640, 400],
+      "credentials": {"airtableTokenApi": {"id": "", "name": "Airtable"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// SEO Report Generator\n\nconst websites = [\n  { name: 'Man Kind AI Tech', url: 'https://www.mankindaitech.com' },\n  { name: 'Dorothy Dean Designs', url: 'https://www.dorothydeandesigns.com' }\n];\n\nconst seoChecklist = [\n  'Page titles and meta descriptions',\n  'Header structure (H1, H2, H3)',\n  'Image alt tags',\n  'Mobile responsiveness',\n  'Page load speed',\n  'Internal linking',\n  'Schema markup',\n  'SSL certificate',\n  'Sitemap presence'\n];\n\nreturn {\n  task_type: 'seo_report',\n  websites: websites,\n  checklist: seoChecklist,\n  report_date: new Date().toISOString()\n};"
+      },
+      "id": "prep-seo-report",
+      "name": "Prepare SEO Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 660]
+    },
+    {
+      "parameters": {
+        "model": "models/gemini-2.0-flash",
+        "prompt": {
+          "messageValues": [
+            {
+              "content": "=You are an SEO expert. Analyze these websites and provide actionable recommendations to rank #1 on Google:\n\nWebsites:\n{{ JSON.stringify($json.websites) }}\n\nFor each website, provide:\n1. Top 3 immediate improvements\n2. Keyword opportunities\n3. Content gaps to fill\n4. Technical issues to fix\n5. Competitive positioning strategy\n\nBe specific and actionable."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ai-seo-analysis",
+      "name": "AI SEO Analysis",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1200, 660],
+      "credentials": {"googlePalmApi": {"id": "", "name": "Google Gemini"}}
+    },
+    {
+      "parameters": {
+        "sendTo": "support@mankindaitech.com",
+        "subject": "=📊 Weekly SEO Report - {{ new Date().toLocaleDateString() }}",
+        "emailType": "html",
+        "message": "=<h2>Weekly SEO Analysis Report</h2>\n<p>Generated by MKAI Marketing Agent</p>\n\n<h3>Websites Analyzed:</h3>\n<ul>\n  <li>Man Kind AI Tech (mankindaitech.com)</li>\n  <li>Dorothy Dean Designs</li>\n</ul>\n\n<h3>Analysis & Recommendations:</h3>\n<pre style=\"white-space: pre-wrap; font-family: sans-serif;\">{{ $json.text || $json.content || 'Analysis pending' }}</pre>\n\n<hr>\n<p><em>Generated {{ new Date().toLocaleString() }}</em></p>"
+      },
+      "id": "email-seo-report",
+      "name": "Email SEO Report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1420, 660],
+      "credentials": {"gmailOAuth2": {"id": "", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion\nconst task = $('Classify Marketing Task').first().json;\n\nreturn {\n  agent: 'marketing',\n  task_type: task.task_type,\n  brand: task.brand,\n  status: 'completed',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "complete",
+      "name": "Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1860, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2080, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {"main": [[{"node": "Classify Marketing Task", "type": "main", "index": 0}]]},
+    "Daily 8 AM (DDD Social)": {"main": [[{"node": "Classify Marketing Task", "type": "main", "index": 0}]]},
+    "Daily 9 AM (MKAI Social)": {"main": [[{"node": "Classify Marketing Task", "type": "main", "index": 0}]]},
+    "Monday 7 AM (SEO Report)": {"main": [[{"node": "Classify Marketing Task", "type": "main", "index": 0}]]},
+    "Classify Marketing Task": {"main": [[{"node": "Route Task", "type": "main", "index": 0}]]},
+    "Route Task": {
+      "main": [
+        [{"node": "Get DDD Content", "type": "main", "index": 0}],
+        [{"node": "Get MKAI Content", "type": "main", "index": 0}],
+        [{"node": "Prepare SEO Report", "type": "main", "index": 0}],
+        [{"node": "Get MKAI Content", "type": "main", "index": 0}]
+      ]
+    },
+    "Get DDD Content": {"main": [[{"node": "Process Content", "type": "main", "index": 0}]]},
+    "Get MKAI Content": {"main": [[{"node": "Process Content", "type": "main", "index": 0}]]},
+    "Process Content": {"main": [[{"node": "Post to Social (Placeholder)", "type": "main", "index": 0}]]},
+    "Post to Social (Placeholder)": {"main": [[{"node": "Update Airtable Status", "type": "main", "index": 0}]]},
+    "Update Airtable Status": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Prepare SEO Report": {"main": [[{"node": "AI SEO Analysis", "type": "main", "index": 0}]]},
+    "AI SEO Analysis": {"main": [[{"node": "Email SEO Report", "type": "main", "index": 0}]]},
+    "Email SEO Report": {"main": [[{"node": "Complete", "type": "main", "index": 0}]]},
+    "Complete": {"main": [[{"node": "Respond", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": [{"name": "MKAI"}, {"name": "Marketing"}],
+  "pinData": {}
+}

@@ -1,0 +1,208 @@
+{
+  "name": "MKAI Calendar Manager",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "daily-6am-trigger",
+      "name": "Daily 6 AM EST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-calendar-manager",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 480],
+      "webhookId": "mkai-calendar-manager"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate 48-hour blocking window\n// Business hours: 9 AM - 5 PM EST\n// Buffer: 15 minutes between meetings\n\nconst now = new Date();\n\n// Start from tomorrow 9 AM\nconst tomorrow = new Date(now);\ntomorrow.setDate(tomorrow.getDate() + 1);\ntomorrow.setHours(9, 0, 0, 0);\n\n// End 48 hours from now at 5 PM\nconst endDate = new Date(now);\nendDate.setDate(endDate.getDate() + 2);\nendDate.setHours(17, 0, 0, 0);\n\n// Generate time slots to potentially block\n// Each slot is 30 minutes\nconst slots = [];\nlet current = new Date(tomorrow);\n\nwhile (current < endDate) {\n  const hour = current.getHours();\n  const day = current.getDay();\n  \n  // Skip weekends (0 = Sunday, 6 = Saturday)\n  if (day !== 0 && day !== 6) {\n    // Only during business hours (9 AM - 5 PM)\n    if (hour >= 9 && hour < 17) {\n      slots.push({\n        start: new Date(current).toISOString(),\n        end: new Date(current.getTime() + 30 * 60 * 1000).toISOString(),\n        summary: '🔒 Focus Time (Auto-blocked)',\n        description: 'Auto-blocked by MKAI Calendar Manager. Delete to open this slot for meetings.'\n      });\n    }\n  }\n  \n  // Move to next 30-min slot\n  current.setMinutes(current.getMinutes() + 30);\n}\n\nreturn {\n  action: 'block_calendar',\n  window_start: tomorrow.toISOString(),\n  window_end: endDate.toISOString(),\n  slots_to_check: slots.length,\n  slots: slots,\n  timestamp: now.toISOString()\n};"
+      },
+      "id": "calculate-slots",
+      "name": "Calculate Block Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 380]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "returnAll": false,
+        "limit": 100,
+        "options": {
+          "timeMin": "={{ $json.window_start }}",
+          "timeMax": "={{ $json.window_end }}",
+          "singleEvents": true
+        }
+      },
+      "id": "get-existing-events",
+      "name": "Get Existing Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [700, 380],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "",
+          "name": "Google Calendar"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Connect your Google Calendar credentials"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter out slots that already have events\n// Only block slots that are currently free\n\nconst blockData = $('Calculate Block Slots').first().json;\nconst existingEvents = $('Get Existing Events').all().map(e => e.json);\n\nconst slotsToBlock = [];\n\nfor (const slot of blockData.slots) {\n  const slotStart = new Date(slot.start);\n  const slotEnd = new Date(slot.end);\n  \n  let isFree = true;\n  \n  for (const event of existingEvents) {\n    const eventStart = new Date(event.start?.dateTime || event.start?.date);\n    const eventEnd = new Date(event.end?.dateTime || event.end?.date);\n    \n    // Check for overlap\n    if (slotStart < eventEnd && slotEnd > eventStart) {\n      isFree = false;\n      break;\n    }\n  }\n  \n  // Only add truly free slots\n  if (isFree) {\n    slotsToBlock.push(slot);\n  }\n}\n\nreturn {\n  total_slots: blockData.slots.length,\n  existing_events: existingEvents.length,\n  slots_to_block: slotsToBlock.length,\n  slots: slotsToBlock\n};"
+      },
+      "id": "filter-free-slots",
+      "name": "Filter Free Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 380]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-slots",
+              "leftValue": "={{ $json.slots_to_block }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-has-slots",
+      "name": "Has Slots to Block?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [1140, 380]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare slots for batch creation\nconst data = $input.first().json;\n\nreturn data.slots.map(slot => ({\n  ...slot,\n  colorId: '8' // Graphite color for blocked time\n}));"
+      },
+      "id": "prepare-events",
+      "name": "Prepare Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list"
+        },
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "additionalFields": {
+          "summary": "={{ $json.summary }}",
+          "description": "={{ $json.description }}",
+          "colorId": "8"
+        }
+      },
+      "id": "create-block-events",
+      "name": "Create Block Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [1580, 300],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion summary\nconst filterData = $('Filter Free Slots').first().json;\nconst createdEvents = $input.all();\n\nreturn {\n  worker: 'calendar_manager',\n  action: '48_hour_block',\n  status: 'completed',\n  total_slots_checked: filterData.total_slots,\n  existing_events: filterData.existing_events,\n  new_blocks_created: createdEvents.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "return-success",
+      "name": "Return Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No slots to block - calendar already full or all blocked\nconst filterData = $input.first().json;\n\nreturn {\n  worker: 'calendar_manager',\n  action: '48_hour_block',\n  status: 'completed',\n  message: 'No free slots to block - calendar already has events or blocks',\n  total_slots_checked: filterData.total_slots,\n  existing_events: filterData.existing_events,\n  new_blocks_created: 0,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "return-no-slots",
+      "name": "Return No Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 480]
+    }
+  ],
+  "connections": {
+    "Daily 6 AM EST": {
+      "main": [[{"node": "Calculate Block Slots", "type": "main", "index": 0}]]
+    },
+    "Webhook Trigger": {
+      "main": [[{"node": "Calculate Block Slots", "type": "main", "index": 0}]]
+    },
+    "Calculate Block Slots": {
+      "main": [[{"node": "Get Existing Events", "type": "main", "index": 0}]]
+    },
+    "Get Existing Events": {
+      "main": [[{"node": "Filter Free Slots", "type": "main", "index": 0}]]
+    },
+    "Filter Free Slots": {
+      "main": [[{"node": "Has Slots to Block?", "type": "main", "index": 0}]]
+    },
+    "Has Slots to Block?": {
+      "main": [
+        [{"node": "Prepare Events", "type": "main", "index": 0}],
+        [{"node": "Return No Slots", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Events": {
+      "main": [[{"node": "Create Block Events", "type": "main", "index": 0}]]
+    },
+    "Create Block Events": {
+      "main": [[{"node": "Return Success", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "staticData": null,
+  "tags": [{"name": "MKAI"}, {"name": "Admin"}, {"name": "Calendar"}],
+  "triggerCount": 2,
+  "pinData": {}
+}

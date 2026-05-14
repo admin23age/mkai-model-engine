@@ -1,0 +1,157 @@
+{
+  "name": "DD Website Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "chat",
+        "options": {
+          "allowedOrigins": "https://dorothydeansdesigns.com"
+        }
+      },
+      "id": "chat-trigger",
+      "name": "Chat Trigger",
+      "type": "n8n-nodes-base.chatTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "dd-website-chat"
+    },
+    {
+      "parameters": {
+        "operation": "getMany",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblcGnodbI33UjU67"
+        },
+        "returnAll": true
+      },
+      "id": "fetch-kb",
+      "name": "Fetch Knowledge Base",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build FAQ context from Knowledge Base\nconst kbItems = $input.all();\nconst userMessage = $('Chat Trigger').first().json.chatInput;\nconst sessionId = $('Chat Trigger').first().json.sessionId || `session_${Date.now()}`;\n\nlet faqContext = \"DOROTHY DEAN DESIGNS FAQ:\\n\\n\";\n\nfor (const item of kbItems) {\n  const q = item.json.Question || item.json.fields?.Question || '';\n  const a = item.json.Answer || item.json.fields?.Answer || '';\n  if (q && a) {\n    faqContext += `Q: ${q}\\nA: ${a}\\n\\n`;\n  }\n}\n\nreturn {\n  json: {\n    userMessage,\n    sessionId,\n    faqContext\n  }\n};"
+      },
+      "id": "build-context",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are the Dorothy Dean Designs customer support assistant. You help customers with questions about orders, shipping, returns, sizing, and products. Be warm, helpful, and reflect our faith-based feminine brand values. Use the FAQ knowledge base to answer questions accurately. If you can't find the answer, offer to connect them with a human agent. Keep responses concise and friendly.\\n\\n{{ $json.faqContext }}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.userMessage }}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 500\n}"
+      },
+      "id": "openai-chat",
+      "name": "Generate Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst buildContext = $('Build Context').first().json;\n\nconst botResponse = response.choices?.[0]?.message?.content || 'I apologize, but I encountered an issue. Please try again or email support@dorothydeansdesigns.com.';\n\nreturn {\n  json: {\n    response: botResponse,\n    sessionId: buildContext.sessionId,\n    userMessage: buildContext.userMessage\n  }\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "apphncIswjpBhPcqz"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblYjtfbAcQdVwRUT"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fldIkPsDO4MNqTPym": "={{ $json.sessionId }}",
+            "fldNlKfKBwRLRw1cF": "={{ $json.userMessage }}",
+            "fldMuFdw8y7IyfZAL": "={{ $json.response }}"
+          }
+        }
+      },
+      "id": "log-chat",
+      "name": "Log to Chat Log",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1340, 400],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "YOUR_AIRTABLE_CREDENTIAL_ID",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $('Parse Response').item.json.response }}"
+      },
+      "id": "respond",
+      "name": "Respond to Chat",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [[{"node": "Fetch Knowledge Base", "type": "main", "index": 0}]]
+    },
+    "Fetch Knowledge Base": {
+      "main": [[{"node": "Build Context", "type": "main", "index": 0}]]
+    },
+    "Build Context": {
+      "main": [[{"node": "Generate Response", "type": "main", "index": 0}]]
+    },
+    "Generate Response": {
+      "main": [[{"node": "Parse Response", "type": "main", "index": 0}]]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {"node": "Respond to Chat", "type": "main", "index": 0},
+          {"node": "Log to Chat Log", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

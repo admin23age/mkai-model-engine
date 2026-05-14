@@ -1,0 +1,318 @@
+{
+  "name": "MKAI Website Maintenance Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-website-maintenance",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-website-maintenance"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming maintenance request\nconst input = $input.first().json;\nconst body = input.body || input;\n\nconst request = {\n  task_id: `maint_${Date.now()}`,\n  client_email: body.client_email || body.from_email || '',\n  client_name: body.client_name || body.from_name || '',\n  website_url: body.website_url || body.website || '',\n  request_type: body.request_type || 'general',\n  description: body.description || body.message || body.snippet || '',\n  priority: body.priority || 'normal',\n  source: body.source || 'email',\n  timestamp: new Date().toISOString(),\n  status: 'received'\n};\n\n// Classify request type\nconst desc = request.description.toLowerCase();\n\nif (desc.includes('urgent') || desc.includes('emergency') || desc.includes('down') || desc.includes('broken')) {\n  request.priority = 'high';\n  request.request_type = 'urgent_fix';\n} else if (desc.includes('update') || desc.includes('change') || desc.includes('edit')) {\n  request.request_type = 'content_update';\n} else if (desc.includes('new page') || desc.includes('add page') || desc.includes('create')) {\n  request.request_type = 'new_content';\n} else if (desc.includes('image') || desc.includes('photo') || desc.includes('logo')) {\n  request.request_type = 'media_update';\n} else if (desc.includes('bug') || desc.includes('error') || desc.includes('not working')) {\n  request.request_type = 'bug_fix';\n  request.priority = 'high';\n}\n\nreturn request;"
+      },
+      "id": "parse-request",
+      "name": "Parse Maintenance Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "options": {
+          "filterByFormula": "=FIND(LOWER('{{ $json.client_email }}'), LOWER({Email})) > 0"
+        }
+      },
+      "id": "check-client-exists",
+      "name": "Check Client in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [680, 300],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "",
+          "name": "Airtable"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "TODO: Set your Clients base and table IDs"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-existing-client",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-existing-client",
+      "name": "Is Existing Client?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $('Parse Maintenance Request').first().json.priority }}", "rightValue": "high", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Priority"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $('Parse Maintenance Request').first().json.request_type }}", "rightValue": "content_update", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Content Update"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $('Parse Maintenance Request').first().json.request_type }}", "rightValue": "new_content", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "New Content"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "General"}
+        },
+        "options": {}
+      },
+      "id": "route-request-type",
+      "name": "Route by Request Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "operation": "create",
+        "departmentId": "",
+        "contactId": "",
+        "subject": "=🚨 URGENT: {{ $('Parse Maintenance Request').first().json.request_type }} - {{ $('Parse Maintenance Request').first().json.client_name }}",
+        "description": "={{ $('Parse Maintenance Request').first().json.description }}",
+        "additionalFields": {
+          "email": "={{ $('Parse Maintenance Request').first().json.client_email }}",
+          "priority": "High",
+          "channel": "Email"
+        }
+      },
+      "id": "create-urgent-ticket",
+      "name": "Create Urgent Zoho Ticket",
+      "type": "n8n-nodes-base.zohoDeskApi",
+      "typeVersion": 1,
+      "position": [1360, 100],
+      "credentials": {
+        "zohoOAuth2Api": {
+          "id": "",
+          "name": "Zoho Desk"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "High priority tickets go straight to Zoho Desk"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "fields": {
+          "fieldValues": {
+            "values": [
+              {"fieldId": "Client", "fieldValue": "={{ $('Parse Maintenance Request').first().json.client_name }}"},
+              {"fieldId": "Email", "fieldValue": "={{ $('Parse Maintenance Request').first().json.client_email }}"},
+              {"fieldId": "Request Type", "fieldValue": "={{ $('Parse Maintenance Request').first().json.request_type }}"},
+              {"fieldId": "Description", "fieldValue": "={{ $('Parse Maintenance Request').first().json.description }}"},
+              {"fieldId": "Status", "fieldValue": "Received"},
+              {"fieldId": "Priority", "fieldValue": "={{ $('Parse Maintenance Request').first().json.priority }}"},
+              {"fieldId": "Website", "fieldValue": "={{ $('Parse Maintenance Request').first().json.website_url }}"}
+            ]
+          }
+        }
+      },
+      "id": "log-maintenance-request",
+      "name": "Log to Maintenance Table",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1360, 260],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "",
+          "name": "Airtable"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "TODO: Create Maintenance Requests table in Airtable"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Parse Maintenance Request').first().json.client_email }}",
+        "subject": "=✅ Maintenance Request Received - {{ $('Parse Maintenance Request').first().json.request_type }}",
+        "emailType": "html",
+        "message": "=<h2>We've Received Your Request</h2>\n\n<p>Hi {{ $('Parse Maintenance Request').first().json.client_name }},</p>\n\n<p>Thank you for reaching out. We've received your website maintenance request and will begin working on it shortly.</p>\n\n<h3>Request Details:</h3>\n<ul>\n  <li><strong>Type:</strong> {{ $('Parse Maintenance Request').first().json.request_type }}</li>\n  <li><strong>Priority:</strong> {{ $('Parse Maintenance Request').first().json.priority }}</li>\n  <li><strong>Request ID:</strong> {{ $('Parse Maintenance Request').first().json.task_id }}</li>\n</ul>\n\n<p><strong>Your Request:</strong></p>\n<blockquote>{{ $('Parse Maintenance Request').first().json.description }}</blockquote>\n\n<h3>What's Next?</h3>\n<p>Our team will review your request and get back to you within 24-48 business hours. For urgent issues, we prioritize accordingly.</p>\n\n<p>If you have any questions, reply to this email or contact us at support@mankindaitech.com.</p>\n\n<p>Best regards,<br>\nMan Kind AI Tech Support Team</p>"
+      },
+      "id": "send-confirmation",
+      "name": "Send Client Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1580, 260],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Not an existing client - route to Sales or create inquiry\nconst request = $('Parse Maintenance Request').first().json;\n\nreturn {\n  ...request,\n  status: 'not_existing_client',\n  action: 'route_to_sales',\n  message: 'Sender is not an existing client. Routing to Sales for potential new client opportunity.'\n};"
+      },
+      "id": "not-client-handler",
+      "name": "Not Existing Client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 420]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.OWNER_EMAIL || 'support@mankindaitech.com' }}",
+        "subject": "=🆕 New Prospect Inquiry: {{ $json.client_name }}",
+        "emailType": "html",
+        "message": "=<h2>New Prospect Website Inquiry</h2>\n\n<p>Someone who is NOT an existing client has submitted a website-related request. This may be a new sales opportunity.</p>\n\n<h3>Contact Details:</h3>\n<ul>\n  <li><strong>Name:</strong> {{ $json.client_name }}</li>\n  <li><strong>Email:</strong> {{ $json.client_email }}</li>\n  <li><strong>Website:</strong> {{ $json.website_url }}</li>\n</ul>\n\n<h3>Their Request:</h3>\n<blockquote>{{ $json.description }}</blockquote>\n\n<p><strong>Recommended Action:</strong> Follow up as a potential new client lead.</p>\n\n<hr>\n<p><em>Routed by MKAI Website Maintenance Agent</em></p>"
+      },
+      "id": "notify-sales-new-prospect",
+      "name": "Notify About New Prospect",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1360, 420],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return completion summary\nconst request = $('Parse Maintenance Request').first().json;\n\nreturn {\n  worker: 'website_maintenance',\n  task_id: request.task_id,\n  client: request.client_name,\n  request_type: request.request_type,\n  priority: request.priority,\n  status: 'processed',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "return-summary",
+      "name": "Return Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2020, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Parse Maintenance Request", "type": "main", "index": 0}]]
+    },
+    "Parse Maintenance Request": {
+      "main": [[{"node": "Check Client in Airtable", "type": "main", "index": 0}]]
+    },
+    "Check Client in Airtable": {
+      "main": [[{"node": "Is Existing Client?", "type": "main", "index": 0}]]
+    },
+    "Is Existing Client?": {
+      "main": [
+        [{"node": "Route by Request Type", "type": "main", "index": 0}],
+        [{"node": "Not Existing Client", "type": "main", "index": 0}]
+      ]
+    },
+    "Route by Request Type": {
+      "main": [
+        [{"node": "Create Urgent Zoho Ticket", "type": "main", "index": 0}],
+        [{"node": "Log to Maintenance Table", "type": "main", "index": 0}],
+        [{"node": "Log to Maintenance Table", "type": "main", "index": 0}],
+        [{"node": "Log to Maintenance Table", "type": "main", "index": 0}]
+      ]
+    },
+    "Create Urgent Zoho Ticket": {
+      "main": [[{"node": "Log to Maintenance Table", "type": "main", "index": 0}]]
+    },
+    "Log to Maintenance Table": {
+      "main": [[{"node": "Send Client Confirmation", "type": "main", "index": 0}]]
+    },
+    "Send Client Confirmation": {
+      "main": [[{"node": "Return Summary", "type": "main", "index": 0}]]
+    },
+    "Not Existing Client": {
+      "main": [[{"node": "Notify About New Prospect", "type": "main", "index": 0}]]
+    },
+    "Notify About New Prospect": {
+      "main": [[{"node": "Return Summary", "type": "main", "index": 0}]]
+    },
+    "Return Summary": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "staticData": null,
+  "tags": [{"name": "MKAI"}, {"name": "Admin"}, {"name": "Maintenance"}],
+  "triggerCount": 1,
+  "pinData": {}
+}

@@ -1,0 +1,190 @@
+{
+  "_description": "MKAI Permissions and Safety Configuration",
+  "_version": "1.0.0",
+  "_updated": "2024-03-31",
+
+  "agents": {
+    "admin_supervisor": {
+      "allowed_actions": [
+        "read_email",
+        "classify_email",
+        "archive_email",
+        "create_calendar_event",
+        "read_calendar",
+        "create_zoho_ticket",
+        "read_airtable",
+        "write_airtable",
+        "send_email_notification"
+      ],
+      "forbidden_actions": [
+        "delete_email_permanently",
+        "access_financial_data",
+        "modify_user_permissions",
+        "delete_calendar_events_not_created_by_agent"
+      ],
+      "data_access": {
+        "gmail": ["read", "archive", "send"],
+        "calendar": ["read", "create", "update_own"],
+        "airtable": ["read", "create", "update"],
+        "zoho_desk": ["create_ticket"]
+      },
+      "rate_limits": {
+        "emails_per_check": 20,
+        "calendar_blocks_per_day": 32,
+        "social_posts_per_day": 2
+      }
+    },
+
+    "email_router": {
+      "allowed_actions": [
+        "read_email",
+        "classify_email",
+        "archive_spam",
+        "mark_as_read",
+        "forward_to_supervisor"
+      ],
+      "forbidden_actions": [
+        "send_email_as_user",
+        "delete_email",
+        "access_attachments_over_10mb"
+      ],
+      "classification_rules": {
+        "auto_archive": ["spam", "promotional", "unsubscribe"],
+        "require_human_review": ["partnership", "legal", "complaint"],
+        "auto_route": ["sales_inquiry", "support_request", "maintenance"]
+      }
+    },
+
+    "calendar_manager": {
+      "allowed_actions": [
+        "read_calendar",
+        "create_block_events",
+        "check_availability"
+      ],
+      "forbidden_actions": [
+        "delete_existing_meetings",
+        "modify_other_users_calendars",
+        "access_private_event_details"
+      ],
+      "blocking_rules": {
+        "max_hours_ahead": 48,
+        "business_hours_only": true,
+        "business_hours_start": "09:00",
+        "business_hours_end": "17:00",
+        "timezone": "America/New_York",
+        "skip_weekends": true,
+        "buffer_minutes": 15
+      }
+    },
+
+    "marketing_agent": {
+      "allowed_actions": [
+        "read_airtable_content",
+        "update_post_status",
+        "generate_seo_report",
+        "send_report_email"
+      ],
+      "forbidden_actions": [
+        "post_without_approval_flag",
+        "delete_content",
+        "modify_brand_guidelines"
+      ],
+      "content_rules": {
+        "require_status_ready": true,
+        "max_posts_per_brand_per_day": 1,
+        "allowed_brands": ["dorothy_dean_designs", "mankind_ai"]
+      }
+    },
+
+    "website_maintenance": {
+      "allowed_actions": [
+        "read_maintenance_requests",
+        "create_maintenance_task",
+        "send_confirmation_email",
+        "create_support_ticket"
+      ],
+      "forbidden_actions": [
+        "directly_modify_websites",
+        "access_client_credentials",
+        "process_non_client_requests"
+      ],
+      "validation_rules": {
+        "must_verify_client_exists": true,
+        "non_client_action": "notify_as_prospect"
+      }
+    }
+  },
+
+  "global_safety": {
+    "pii_handling": {
+      "log_full_email_bodies": false,
+      "log_email_subjects": true,
+      "log_email_snippets": true,
+      "max_snippet_length": 200,
+      "redact_patterns": [
+        "\\b\\d{3}-\\d{2}-\\d{4}\\b",
+        "\\b\\d{16}\\b",
+        "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      ]
+    },
+
+    "authentication": {
+      "store_credentials_in": "n8n_credentials_store",
+      "never_log_api_keys": true,
+      "rotate_tokens": "on_expiry",
+      "oauth_providers": ["google", "zoho"]
+    },
+
+    "error_handling": {
+      "max_retries": 3,
+      "backoff_seconds": [5, 15, 45],
+      "alert_on_critical": true,
+      "alert_email": "support@mankindaitech.com"
+    },
+
+    "input_validation": {
+      "sanitize_all_strings": true,
+      "max_input_length": 10000,
+      "required_fields_by_endpoint": {
+        "mkai-admin-supervisor": ["task_type"],
+        "mkai-email-router": [],
+        "mkai-calendar-manager": [],
+        "mkai-marketing": [],
+        "mkai-website-maintenance": ["client_email", "description"]
+      }
+    }
+  },
+
+  "rate_limits": {
+    "airtable": {
+      "requests_per_second": 5,
+      "records_per_request": 100
+    },
+    "gmail": {
+      "emails_per_day": 500,
+      "reads_per_minute": 60
+    },
+    "zoho_desk": {
+      "requests_per_minute": 100
+    },
+    "google_calendar": {
+      "requests_per_100_seconds": 100
+    }
+  },
+
+  "audit_logging": {
+    "enabled": true,
+    "log_destination": "airtable",
+    "log_base_id": "TBD",
+    "log_table": "Agent Audit Log",
+    "log_fields": [
+      "timestamp",
+      "agent",
+      "action",
+      "target",
+      "result",
+      "error"
+    ],
+    "retention_days": 90
+  }
+}

@@ -1,0 +1,304 @@
+{
+  "name": "MKAI Email Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mkai-email-router",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "mkai-email-router"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 20,
+        "filters": {
+          "readStatus": "unread",
+          "receivedAfter": "={{ DateTime.now().minus({hours: 1}).toISO() }}"
+        },
+        "options": {}
+      },
+      "id": "get-emails",
+      "name": "Get Unread Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail - support@mankindaitech.com"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Connect your Gmail credentials"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-emails",
+      "name": "Process Each Email",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Email Classifier\n// Determines routing based on content and sender\n\nconst email = $input.first().json;\n\nconst subject = (email.subject || '').toLowerCase();\nconst body = (email.snippet || email.text || '').toLowerCase();\nconst fromEmail = email.from?.email || email.from || '';\nconst fromName = email.from?.name || '';\nconst content = subject + ' ' + body;\n\n// Spam/archive patterns\nconst spamPatterns = [\n  'unsubscribe', 'opt-out', 'opt out', 'remove me',\n  'viagra', 'casino', 'lottery', 'winner',\n  'nigerian prince', 'inheritance', 'bitcoin opportunity',\n  'click here now', 'act now', 'limited time',\n  'no-reply', 'noreply', 'donotreply'\n];\n\n// Sales patterns (new prospects)\nconst salesPatterns = [\n  'pricing', 'price', 'cost', 'quote', 'how much',\n  'interested in', 'looking for', 'need help with',\n  'services', 'consultation', 'discovery call',\n  'ai audit', 'ai consulting', 'want to learn more'\n];\n\n// Support patterns (existing clients)\nconst supportPatterns = [\n  'help', 'issue', 'problem', 'broken', 'not working',\n  'error', 'bug', 'down', 'crashed', 'fix',\n  'urgent', 'emergency', 'asap'\n];\n\n// Maintenance patterns\nconst maintenancePatterns = [\n  'update', 'change', 'edit', 'modify', 'maintenance',\n  'add to website', 'website change', 'new page',\n  'update my site', 'change the'\n];\n\n// Partnership patterns\nconst partnershipPatterns = [\n  'partnership', 'partner', 'collaborate', 'collaboration',\n  'media', 'press', 'interview', 'podcast', 'feature',\n  'guest', 'speaking', 'conference'\n];\n\n// Check patterns\nlet classification = 'unknown';\nlet confidence = 0;\nlet destination = 'review';\n\n// Check spam first\nfor (const pattern of spamPatterns) {\n  if (content.includes(pattern)) {\n    classification = 'spam';\n    confidence = 0.9;\n    destination = 'archive';\n    break;\n  }\n}\n\n// Check partnership (flag for owner)\nif (classification === 'unknown') {\n  for (const pattern of partnershipPatterns) {\n    if (content.includes(pattern)) {\n      classification = 'partnership';\n      confidence = 0.85;\n      destination = 'owner';\n      break;\n    }\n  }\n}\n\n// Check sales patterns\nif (classification === 'unknown') {\n  for (const pattern of salesPatterns) {\n    if (content.includes(pattern)) {\n      classification = 'sales_inquiry';\n      confidence = 0.8;\n      destination = 'sales_supervisor';\n      break;\n    }\n  }\n}\n\n// Check support patterns\nif (classification === 'unknown') {\n  for (const pattern of supportPatterns) {\n    if (content.includes(pattern)) {\n      classification = 'support_request';\n      confidence = 0.8;\n      destination = 'zoho_desk';\n      break;\n    }\n  }\n}\n\n// Check maintenance patterns\nif (classification === 'unknown') {\n  for (const pattern of maintenancePatterns) {\n    if (content.includes(pattern)) {\n      classification = 'maintenance_request';\n      confidence = 0.75;\n      destination = 'website_maintenance';\n      break;\n    }\n  }\n}\n\n// Default to manual review\nif (classification === 'unknown') {\n  destination = 'owner';\n  confidence = 0.3;\n}\n\nreturn {\n  email_id: email.id,\n  thread_id: email.threadId,\n  from_email: fromEmail,\n  from_name: fromName,\n  subject: email.subject,\n  snippet: email.snippet,\n  classification: classification,\n  confidence: confidence,\n  destination: destination,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "classify-email",
+      "name": "Classify Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "sales_supervisor", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "zoho_desk", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Support"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "website_maintenance", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Maintenance"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "owner", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Owner"
+            },
+            {
+              "conditions": {
+                "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+                "conditions": [{"leftValue": "={{ $json.destination }}", "rightValue": "archive", "operator": {"type": "string", "operation": "equals"}}],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Archive"
+            }
+          ],
+          "fallbackOutput": {"renameOutput": true, "outputKey": "Review"}
+        },
+        "options": {}
+      },
+      "id": "route-email",
+      "name": "Route Email",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Forward to Sales Supervisor\nconst email = $input.first().json;\n\nreturn {\n  ...email,\n  action: 'forward_to_sales',\n  status: 'routed',\n  routed_to: 'Sales Supervisor',\n  message: 'New prospect inquiry - forwarded to Sales Supervisor for follow-up'\n};"
+      },
+      "id": "route-sales",
+      "name": "Route to Sales",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 100],
+      "notesInFlow": true,
+      "notes": "TODO: Add HTTP Request to Sales Supervisor webhook or Execute Workflow"
+    },
+    {
+      "parameters": {
+        "resource": "ticket",
+        "operation": "create",
+        "departmentId": "",
+        "contactId": "",
+        "subject": "={{ $json.subject }}",
+        "description": "={{ $json.snippet }}",
+        "additionalFields": {
+          "email": "={{ $json.from_email }}",
+          "priority": "Medium",
+          "channel": "Email"
+        }
+      },
+      "id": "create-zoho-ticket",
+      "name": "Create Zoho Desk Ticket",
+      "type": "n8n-nodes-base.zohoDeskApi",
+      "typeVersion": 1,
+      "position": [1380, 260],
+      "credentials": {
+        "zohoOAuth2Api": {
+          "id": "",
+          "name": "Zoho Desk"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Connect your Zoho Desk credentials and set departmentId"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Route to Website Maintenance Agent\nconst email = $input.first().json;\n\nreturn {\n  ...email,\n  action: 'maintenance_request',\n  status: 'routed',\n  routed_to: 'Website Maintenance Agent',\n  message: 'Website maintenance request - forwarded to Website Maintenance Agent'\n};"
+      },
+      "id": "route-maintenance",
+      "name": "Route to Maintenance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1380, 420],
+      "notesInFlow": true,
+      "notes": "TODO: Add Execute Workflow for Website Maintenance"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.OWNER_EMAIL || 'support@mankindaitech.com' }}",
+        "subject": "=⚠️ Review Required: {{ $json.classification }} - {{ $json.subject }}",
+        "emailType": "text",
+        "message": "=A new email requires your review:\n\nFrom: {{ $json.from_name }} <{{ $json.from_email }}>\nSubject: {{ $json.subject }}\nClassification: {{ $json.classification }} ({{ Math.round($json.confidence * 100) }}% confidence)\n\nSnippet:\n{{ $json.snippet }}\n\n---\nRouted by MKAI Admin Supervisor"
+      },
+      "id": "notify-owner",
+      "name": "Notify Owner",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 580],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail - support@mankindaitech.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabel",
+        "messageId": "={{ $json.email_id }}",
+        "labelIds": ["TRASH"]
+      },
+      "id": "archive-spam",
+      "name": "Archive Spam",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 740],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail - support@mankindaitech.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mark as processed and log\nconst email = $input.first().json;\n\nreturn {\n  ...email,\n  status: 'processed',\n  processed_at: new Date().toISOString()\n};"
+      },
+      "id": "mark-processed",
+      "name": "Mark Processed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 420]
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.email_id }}"
+      },
+      "id": "mark-read",
+      "name": "Mark as Read",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1820, 420],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail - support@mankindaitech.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return summary\nconst items = $input.all();\n\nreturn {\n  worker: 'email_router',\n  status: 'completed',\n  emails_processed: items.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "return-summary",
+      "name": "Return Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2040, 420]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Get Unread Emails", "type": "main", "index": 0}]]
+    },
+    "Get Unread Emails": {
+      "main": [[{"node": "Process Each Email", "type": "main", "index": 0}]]
+    },
+    "Process Each Email": {
+      "main": [
+        [{"node": "Classify Email", "type": "main", "index": 0}],
+        [{"node": "Return Summary", "type": "main", "index": 0}]
+      ]
+    },
+    "Classify Email": {
+      "main": [[{"node": "Route Email", "type": "main", "index": 0}]]
+    },
+    "Route Email": {
+      "main": [
+        [{"node": "Route to Sales", "type": "main", "index": 0}],
+        [{"node": "Create Zoho Desk Ticket", "type": "main", "index": 0}],
+        [{"node": "Route to Maintenance", "type": "main", "index": 0}],
+        [{"node": "Notify Owner", "type": "main", "index": 0}],
+        [{"node": "Archive Spam", "type": "main", "index": 0}],
+        [{"node": "Notify Owner", "type": "main", "index": 0}]
+      ]
+    },
+    "Route to Sales": {
+      "main": [[{"node": "Mark Processed", "type": "main", "index": 0}]]
+    },
+    "Create Zoho Desk Ticket": {
+      "main": [[{"node": "Mark Processed", "type": "main", "index": 0}]]
+    },
+    "Route to Maintenance": {
+      "main": [[{"node": "Mark Processed", "type": "main", "index": 0}]]
+    },
+    "Notify Owner": {
+      "main": [[{"node": "Mark Processed", "type": "main", "index": 0}]]
+    },
+    "Archive Spam": {
+      "main": [[{"node": "Mark Processed", "type": "main", "index": 0}]]
+    },
+    "Mark Processed": {
+      "main": [[{"node": "Mark as Read", "type": "main", "index": 0}]]
+    },
+    "Mark as Read": {
+      "main": [[{"node": "Process Each Email", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "staticData": null,
+  "tags": [{"name": "MKAI"}, {"name": "Admin"}, {"name": "Email"}],
+  "triggerCount": 1,
+  "pinData": {}
+}
