@@ -88,10 +88,11 @@ Add these fields to the existing `DD Content Queue` table:
 - On persistent failure: write `Generation Failed` + traceback to `Last Generation Error`, exit cleanly
 - Routine moves to next row regardless
 
+**Implementation pattern:** MCP-driven, no separate runtime. Claude executes steps via Airtable MCP, Drive MCP, and WebFetch/Bash for fal.ai (no fal MCP exists).
+
 **Skill scaffold location:** `skills/ddd-content-engine/`
-- `SKILL.md` — instructions for invocation
+- `SKILL.md` — step-by-step instructions Claude follows
 - `references/fal-api.md` — endpoint quirks, schema notes
-- `scripts/generate.py` — actual API call (or inline if simple)
 
 ---
 
