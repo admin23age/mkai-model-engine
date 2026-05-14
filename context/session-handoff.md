@@ -1,7 +1,43 @@
 # MKAI Session Handoff
-*Capsized: 2026-05-08*
+*Latest update: 2026-05-13*
 
-## What Was Accomplished This Session
+---
+
+## Session 2026-05-13 — DDD Content Engine Architecture Locked
+
+### What Was Decided
+- **Media generation tool:** Arcads (multi-model API: Seedance/Sora 2/Veo 3.1/Kling/Nano Banana) — replaces standalone HeyGen/Kling/Higgsfield exploration
+- **Orchestration:** Claude routine via `arcads-external-api` skill — pulls record → picks model per Pillar → invokes Arcads → uploads to Drive → updates Airtable
+- **Audience scope:** Men, women, AND kids (LIFT collection serves whole faith-led family)
+- **Daily volume:** 1 post/day (~30/month) initial; scale once Arcads spend validated
+
+### What Was Built
+- **Airtable** — added 2 fields to `DD Content Queue`:
+  - `Reference Image` (attachment) — `fldKfdXpp0um2TGXb`
+  - `Visual Theme` (long text) — `fldvHfWlf0OPpMRL8`
+- **n8n Workflow C** (`X1kDAxH1uZaVHdX4`) — scaffold built (Kling API version, now superseded by Arcads path). Keep as backup or delete.
+
+### What Remains
+See: [`plans/2026-05-13_ddd-content-engine-v2.md`](../plans/2026-05-13_ddd-content-engine-v2.md) for full spec including:
+- Arcads signup + API key wiring (BLOCKING)
+- Claude routine setup via `/schedule`
+- Monthly Planner UI edits (audience prompt, status default → Needs Media, credential reassignment)
+- **MKAI Marketing Agent rebuild** — currently a stub; needs to become real content workflow manager (daily routine, stuck-record handling, Slack summaries)
+
+### Key Decision Trail (avoid relitigating)
+| Option | Rejected because |
+|---|---|
+| HeyGen pay-per-call | Cost unpredictability + avatar didn't fit luxury fashion brand |
+| Kling Standard direct | Resource pack juggling + daily limits |
+| Higgsfield Plus | Arcads gives same model access via one credential |
+| Veo standalone | Accuracy concerns; available within Arcads as one option |
+| Canva manual | Defeats automation goal |
+
+---
+
+## Session 2026-05-08 — Git + VM Setup
+
+
 
 ### 1. Git Repository — Fully Operational
 - Repo: `https://github.com/admin23age/mkai-model-engine` (private)
