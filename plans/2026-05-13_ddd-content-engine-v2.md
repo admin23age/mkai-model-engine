@@ -1,12 +1,12 @@
 # DDD Content Engine v2 — Architecture & Agent Management Spec
-**Date:** 2026-05-13
-**Status:** Architecture locked; n8n Workflow C deployed (Kling/HeyGen scaffolds); Arcads as final media gen path; agent management spec drafted.
+**Date:** 2026-05-13 (media gen tool finalized 2026-05-16)
+**Status:** Architecture locked. Media generation: **Higgsfield (FINAL)**. n8n Workflow C scaffold deployed. Agent management spec drafted.
 
 ---
 
 ## TL;DR
 
-DDD content pipeline is now four workflows with a Claude-orchestrated media generation layer powered by **Arcads** (single API for Seedance/Sora 2/Veo 3.1/Kling/Nano Banana). Replaces the per-tool HeyGen/Kling/Higgsfield exploration from earlier. Airtable schema extended with `Reference Image` + `Visual Theme` to feed the orchestrator. Outstanding: Arcads API key signup, agent rebuild in n8n, end-to-end test.
+DDD content pipeline is four workflows with a Claude-orchestrated media generation layer powered by **Higgsfield** (Business plan; Cloud API at cloud.higgsfield.ai; access to Kling/Veo/Sora/Seedance + Higgsfield motion presets). This is the FINAL media gen decision — supersedes the earlier HeyGen/Kling/Higgsfield/Arcads/fal.ai exploration. Airtable schema extended with `Reference Image` + `Visual Theme` to feed the orchestrator. Outstanding: Higgsfield Business signup + API key, agent rebuild in n8n, end-to-end test.
 
 ---
 
@@ -18,15 +18,15 @@ DDD content pipeline is now four workflows with a Claude-orchestrated media gene
    • Gemini 2.5 Pro drafts 30-day LIFT-pillar calendar
    • Writes briefs to DD Content Queue with status = Needs Media
        ↓
-[Workflow 2 — Media Generator]  via Claude routine + arcads-external-api skill
+[Workflow 2 — Media Generator]  via Claude routine + Higgsfield Cloud API
    • Reads record (Title, Pillar, Content Brief, Visual Theme, Reference Image)
-   • Picks best Arcads model per content type:
+   • Picks best Higgsfield model per content type:
      - Faith / contemplative → Veo 3.1 (cinematic)
      - Identity / confident → Sora 2 (editorial)
      - Legacy / heritage → Kling 3.0 (warm)
      - Tomorrow / aspirational → Seedance 2.0
-   • Invokes arcads-external-api skill (HTTP Basic auth, polling)
-   • Uploads result to Google Drive /mockups/
+   • Calls Higgsfield Cloud API (Bearer token auth, async poll)
+   • Uploads result to Google Drive — Dorothy Dean folder
    • Updates Airtable: Media URL + status = Generate Content
        ↓
 [Workflow 3 — Caption Generator]  (existing: 8mmfbyucp1sBnhHg, Workflow A)
@@ -41,23 +41,41 @@ DDD content pipeline is now four workflows with a Claude-orchestrated media gene
    • Status → Posted on success
 ```
 
-**Audience targeting (updated):** Men, women, and kids — LIFT collection serves the whole faith-led family across generations. Monthly Planner prompt updated to distribute briefs across all four audience segments instead of skewing female-only.
+**Audience targeting:** Men, women, and kids — LIFT collection serves the whole faith-led family across generations. Monthly Planner prompt distributes briefs across all four audience segments.
 
-**Daily volume:** 1 post/day target (~30/month) to align with conservative Arcads budget. Can scale to 2x once budget validated.
+**Daily volume:** 1 post/day target (~30/month) initial; scale once Higgsfield credit usage validated.
 
 ---
 
-## Tooling Decisions Made This Session
+## Media Generation — Higgsfield (FINAL)
 
-| Question | Decision | Why |
-|---|---|---|
-| Video gen tool | **Arcads (multi-model API)** via cowork skill | Consolidates Kling/Veo/Sora/Seedance into one API; matches DDD aesthetic flexibility better than single-model approach |
-| HeyGen as backup | **Dropped** — kept on Free tier (no API) | Avatar-narrated didn't fit luxury fashion aesthetic + per-call cost was unpredictable |
-| Kling direct API | **Dropped** | Resource pack juggling + daily limits on Standard plan |
-| Higgsfield subscription | **Dropped** | Arcads gives access to same models via one credential |
-| Veo via Gemini | **Dropped as standalone** | Accuracy concerns; usable through Arcads as one of many model options |
-| Canva manual | **Dropped** | Defeated automation goal |
-| Auth pattern | API key (HTTP Basic via `ARCADS_API_KEY` / `ARCADS_BASIC_AUTH`) | Simpler than JWT |
+| Item | Value |
+|---|---|
+| Platform | Higgsfield — https://higgsfield.ai |
+| Plan | Business package |
+| API | Higgsfield Cloud API — https://cloud.higgsfield.ai |
+| Auth | Bearer token — `Authorization: Bearer {API_KEY}` |
+| API key | Issued in Higgsfield Cloud dashboard → API section |
+| Pattern | POST generation request → returns job/request ID → poll status → fetch video URL |
+| Models | Higgsfield motion-preset models + Kling 3.0 / Veo 3.1 / Sora 2 / Seedance via the platform |
+| Credits | Business plan credit pool; ~6 credits per Kling clip, 40-70 per Veo/Sora; credits expire 90 days |
+| Output dimension | 9:16 vertical for TikTok/IG Reels |
+
+**Why Higgsfield (final decision):** Single API for all major models, motion-preset library fits DDD luxury streetwear aesthetic, Business plan consolidates the video stack, API access included in subscription (no separate resource packages).
+
+---
+
+## Decision Trail (do NOT relitigate)
+
+| Option | Rejected because |
+|---|---|
+| HeyGen pay-per-call | Cost unpredictability; avatar didn't fit luxury fashion brand; Free tier has no API |
+| Kling Standard direct | Resource pack juggling; daily generation limits |
+| Veo standalone | Accuracy concerns; available within Higgsfield as one model option |
+| Canva manual | Defeats automation goal |
+| Arcads | Considered, skill installed, then dropped — Higgsfield chosen instead |
+| fal.ai | Briefly considered, then dropped |
+| **Higgsfield** | **FINAL — 2026-05-16** |
 
 ---
 
@@ -66,14 +84,14 @@ DDD content pipeline is now four workflows with a Claude-orchestrated media gene
 **Base:** `appr0OjO1x803LE3z` (Social Media Planner)
 **Table:** `DD Content Queue` (`tblQ9hxifG4Y3Uech`)
 
-Fields added this session:
+Fields added:
 
 | Field | Type | Field ID | Purpose |
 |---|---|---|---|
-| Reference Image | Attachment | `fldKfdXpp0um2TGXb` | Optional visual reference for Arcads to match aesthetic/composition |
-| Visual Theme | Long text | `fldvHfWlf0OPpMRL8` | Optional text description of desired aesthetic — used alongside or instead of Reference Image |
+| Reference Image | Attachment | `fldKfdXpp0um2TGXb` | Optional visual reference for Higgsfield to match aesthetic/composition |
+| Visual Theme | Long text | `fldvHfWlf0OPpMRL8` | Optional text description of desired aesthetic |
 
-**Content Status state machine (unchanged):**
+**Content Status state machine:**
 - `Needs Media` (red) — Monthly Planner output; triggers Workflow 2
 - `Generate Content` (blue) — Media exists; triggers Workflow 3
 - `Caption Ready` (yellow) — Captions written; Slack approval pending
@@ -82,54 +100,50 @@ Fields added this session:
 
 ---
 
+## Config Values
+
+| Key | Value |
+|---|---|
+| `DRIVE_OUTPUT_FOLDER_ID` (DDD) | `17f9pdrIKIdA76F72PbhCjVWzod6d94Qn` (Dorothy Dean Drive folder) |
+| MKAI Drive folder | `1cvVoBSs0wI_JGHA0FXPI8wigib91Ly3m` |
+| Higgsfield API key | TBD — issue in cloud.higgsfield.ai dashboard, store in `.env` |
+
+---
+
 ## n8n Workflow C (Media Generator Scaffold)
 
 **ID:** `X1kDAxH1uZaVHdX4`
-**Name:** `DDD Content Engine — Workflow C: Media Generator (Kling)`
 **URL:** https://agegroup.app.n8n.cloud/workflow/X1kDAxH1uZaVHdX4
 
-**Status:** Built but **superseded** by the Claude+Arcads orchestration path. Keep as backup or delete.
+**Status:** Scaffold built (10 nodes: webhook → get record → build prompt → generate → wait → poll → extract URL → download → Drive → update Airtable). Built against Kling API shape during exploration — **needs rewiring to Higgsfield Cloud API endpoints** OR replacement by the Claude routine path.
 
-Original purpose: webhook-triggered video generation via Kling API. Replaced because Arcads via Claude routine is more flexible (model routing, reference image handling, quality gates).
-
-**Decision pending:** delete Workflow C from n8n once Claude+Arcads orchestration is validated end-to-end.
+**Decision pending:** rewire Workflow C to Higgsfield, or run media gen purely through a Claude routine and delete Workflow C.
 
 ---
 
 ## Agent Management Spec — MKAI Marketing Agent
 
 **Existing n8n agent:** `MKAI Marketing Agent` (`jhnUF1wRfciai6qg`, currently inactive)
-**Current state:** Stub workflow with Classify → Process → Respond nodes returning placeholder messages.
-**Target state:** Real management agent for DDD content workflow.
+**Current state:** Stub workflow — Classify → Process → Respond returning placeholder messages.
+**Target state:** Real management agent for the DDD content workflow.
 
 ### Responsibilities
 
 **Daily routine (8AM ET):**
-1. Scan `DD Content Queue` for current state — counts by status, oldest record per status
+1. Scan `DD Content Queue` — counts by status, oldest record per status
 2. Identify stuck records:
-   - `Needs Media` older than 24 hours → likely Arcads/Workflow 2 failure
-   - `Caption Ready` older than 12 hours → unactioned Slack approval
-   - `Ready to Post` older than 6 hours → publish failure
+   - `Needs Media` >24h → likely Higgsfield/Workflow 2 failure
+   - `Caption Ready` >12h → unactioned Slack approval
+   - `Ready to Post` >6h → publish failure
 3. Take action:
-   - Stuck `Needs Media` → retrigger Workflow 2 (HTTP POST to webhook) OR alert ops
-   - Stuck `Caption Ready` → post Slack reminder to #content-approvals
-   - Stuck `Ready to Post` → check execution log, alert ops with Workflow B error
-4. Daily summary to Slack ops channel:
-   - Posts published yesterday + which platforms
-   - Posts in queue per status
-   - Arcads credit balance (when API exposes it)
-   - Action items requiring human input
+   - Stuck `Needs Media` → retrigger Workflow 2 OR alert ops
+   - Stuck `Caption Ready` → Slack reminder to #content-approvals
+   - Stuck `Ready to Post` → check execution log, alert ops with error
+4. Daily Slack summary: posts published, queue counts, Higgsfield credit balance, action items
 
-**Per-record triggers (webhook):**
-- Receive notifications from Workflow A/B/C completion or failure
-- Update agent's own run log (Airtable or memory bank)
-- Route failures appropriately
+**Per-record triggers (webhook):** receive completion/failure events from Workflows A/B/C, update run log, route failures.
 
-**Strategic (weekly):**
-- Pull engagement metrics per post (Workflow B should write these back)
-- Identify top vs bottom performing pillars
-- Suggest tweaks for next Monthly Planner run
-- Append run report to `memory-bank/ddd/{pillar}.md`
+**Strategic (weekly):** pull engagement metrics, identify top/bottom pillars, suggest Monthly Planner tweaks, append run report to `memory-bank/ddd/{pillar}.md`.
 
 ### Tools the agent needs
 
@@ -138,21 +152,14 @@ Original purpose: webhook-triggered video generation via Kling API. Replaced bec
 | Airtable read | Query `DD Content Queue` with status filters |
 | Airtable update | Adjust status, write retry notes |
 | HTTP Request | Trigger Workflow 2/3/4 webhooks for retries |
-| Slack message | Daily summaries + ad-hoc alerts |
-| (Future) Engagement API | Pull LinkedIn/IG/TikTok metrics for posts |
+| Slack message | Daily summaries + alerts |
+| (Future) Engagement API | Pull LinkedIn/IG/TikTok metrics |
 
 ### Rebuild plan (deferred to next session)
 
-1. Open MKAI Marketing Agent in n8n UI
-2. Replace `Process` stub with branching logic:
-   - On `Daily 8AM DDD` schedule → run DDD content ops routine
-   - On `Daily 9AM MKAI` → run MKAI brand routine (separate; placeholder until MKAI table exists)
-   - On webhook → handle per-record events from Workflows A/B/C
-3. Add nodes:
-   - Airtable List (filter: Content Status in [Needs Media, Caption Ready, Ready to Post])
-   - Code: classify stuck records by age + status
-   - HTTP for retries
-   - Slack post for summary
+1. Open MKAI Marketing Agent in n8n
+2. Replace `Process` stub with branching: Daily 8AM DDD routine / Daily 9AM MKAI / webhook per-record events
+3. Add nodes: Airtable List (filter on stuck statuses), Code (classify by age), HTTP (retries), Slack (summary)
 4. Test with a manually-stuck record before activating
 5. Activate the daily 8AM schedule
 
@@ -161,35 +168,34 @@ Original purpose: webhook-triggered video generation via Kling API. Replaced bec
 ## Outstanding to Ship End-to-End
 
 ### Blocking
-1. **Arcads signup** — https://arcads.ai/?via=caleb → API key → `.env` → `./scripts/setup.sh`
-2. **Claude routine** — `/schedule` an hourly polling routine that invokes `arcads-external-api` skill for any `Needs Media` records
-3. **Monthly Planner UI edits:**
+1. **Higgsfield Business signup** → API key → `.env` → confirm Cloud API endpoints from dashboard
+2. **Workflow C rewire** to Higgsfield Cloud API endpoints (or replace with Claude routine)
+3. **Claude routine** — `/schedule` an hourly routine to process `Needs Media` records via Higgsfield
+4. **Monthly Planner UI edits:**
    - Reassign Apify/Gemini/Airtable creds (stripped in last SDK push)
    - Update Gemini prompt: audience = men/women/kids, distribution 40% women / 35% men / 15% kids / 10% multi-gen
    - Reduce totalPosts to `dates.length` (1/day) if budget requires
-   - Change `Content Status` default from `Generate Content` → `Needs Media` in `Create Airtable Records` node
-4. **Airtable Automation #1 (`Needs Media` → Workflow C webhook)** — only needed if keeping the n8n Workflow C as backup. Skip if going pure Claude routine.
-5. **Airtable Automation #2 (`Generate Content` → `/webhook/content-generate`)** — confirms Workflow A trigger; build per the SOP if not already present.
+   - Change `Content Status` default `Generate Content` → `Needs Media` in `Create Airtable Records`
+5. **Airtable Automation #1** (`Needs Media` → Workflow C webhook) — if keeping n8n Workflow C
+6. **Airtable Automation #2** (`Generate Content` → `/webhook/content-generate`) — confirms Workflow A trigger
 
 ### Non-blocking
 - MKAI Marketing Agent rebuild (spec above)
 - Workflow B: Instagram Graph API placeholder + Blotato API key
-- Workflow A: GitHub auth fix (memory bank logging path)
-- Pillar field cleanup in Airtable (delete 6 legacy options, keep LIFT only)
-- Legacy `Posts` and `Content Calendar` table cleanup
+- Workflow A: GitHub auth fix (memory bank logging)
+- Pillar field cleanup in Airtable (delete 6 legacy options)
+- Legacy `Posts` / `Content Calendar` table cleanup
 
 ---
 
-## Files Touched This Session
+## Deployment / Environment
 
-- `plans/2026-05-13_ddd-content-engine-v2.md` (this file)
-- `context/session-handoff.md` (updated below)
-- n8n Workflow C (`X1kDAxH1uZaVHdX4`) — rebuilt 3 times during exploration; final state: Kling API scaffold (superseded by Arcads path)
-- Airtable `DD Content Queue` — added `Reference Image` + `Visual Theme` fields
+- **Production runtime:** n8n Cloud (`agegroup.app.n8n.cloud`) + Anthropic Cloud (Claude routines). Oracle VM is provisioned but NOT a runtime — stack (Docker, n8n, Security List ports, Twingate Connector) still to install.
+- **Timezone:** Eastern Time (EDT/EST). All cron schedules written in UTC.
 
 ## References
 
-- arcads-external-api skill: `.claude/skills/arcads-external-api/SKILL.md` (in github setup repo)
+- Higgsfield Cloud API: https://cloud.higgsfield.ai
 - MKAI Marketing Agent: n8n workflow `jhnUF1wRfciai6qg`
 - DDD Brand Guide: `context/dd-brand-guide.md`
 - LIFT pillars: `memory-bank/ddd/{faith,identity,legacy,tomorrow}.md`

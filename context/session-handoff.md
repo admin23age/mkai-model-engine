@@ -6,10 +6,12 @@
 ## Session 2026-05-13 — DDD Content Engine Architecture Locked
 
 ### What Was Decided
-- **Media generation tool:** Arcads (multi-model API: Seedance/Sora 2/Veo 3.1/Kling/Nano Banana) — replaces standalone HeyGen/Kling/Higgsfield exploration
-- **Orchestration:** Claude routine via `arcads-external-api` skill — pulls record → picks model per Pillar → invokes Arcads → uploads to Drive → updates Airtable
+- **Media generation tool:** **Higgsfield (FINAL — 2026-05-16).** Business plan; Cloud API at cloud.higgsfield.ai; Bearer token auth; access to Kling/Veo/Sora/Seedance + Higgsfield motion presets. Supersedes HeyGen/Kling/Arcads/fal.ai exploration.
+- **Orchestration:** Claude routine — pulls record → picks model per Pillar → calls Higgsfield Cloud API → uploads to Drive → updates Airtable
 - **Audience scope:** Men, women, AND kids (LIFT collection serves whole faith-led family)
-- **Daily volume:** 1 post/day (~30/month) initial; scale once Arcads spend validated
+- **Daily volume:** 1 post/day (~30/month) initial; scale once Higgsfield credit usage validated
+- **Drive output folders:** DDD = `17f9pdrIKIdA76F72PbhCjVWzod6d94Qn` · MKAI = `1cvVoBSs0wI_JGHA0FXPI8wigib91Ly3m`
+- **Environment:** Production = n8n Cloud + Anthropic Cloud. Oracle VM provisioned but NOT a runtime — stack still to install. Timezone Eastern; crons in UTC.
 
 ### What Was Built
 - **Airtable** — added 2 fields to `DD Content Queue`:
@@ -25,13 +27,15 @@ See: [`plans/2026-05-13_ddd-content-engine-v2.md`](../plans/2026-05-13_ddd-conte
 - **MKAI Marketing Agent rebuild** — currently a stub; needs to become real content workflow manager (daily routine, stuck-record handling, Slack summaries)
 
 ### Key Decision Trail (avoid relitigating)
-| Option | Rejected because |
+| Option | Outcome |
 |---|---|
-| HeyGen pay-per-call | Cost unpredictability + avatar didn't fit luxury fashion brand |
-| Kling Standard direct | Resource pack juggling + daily limits |
-| Higgsfield Plus | Arcads gives same model access via one credential |
-| Veo standalone | Accuracy concerns; available within Arcads as one option |
-| Canva manual | Defeats automation goal |
+| HeyGen pay-per-call | Rejected — cost unpredictability + avatar didn't fit luxury fashion brand |
+| Kling Standard direct | Rejected — resource pack juggling + daily limits |
+| Veo standalone | Rejected — accuracy concerns |
+| Canva manual | Rejected — defeats automation goal |
+| Arcads | Rejected — skill installed then dropped |
+| fal.ai | Rejected — briefly considered |
+| **Higgsfield** | **FINAL (2026-05-16)** — Business plan, Cloud API, all models via one credential |
 
 ---
 
