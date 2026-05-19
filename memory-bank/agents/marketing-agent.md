@@ -1,9 +1,12 @@
-# Social Media Marketing Agent — Memory Bank
+# Kayla — Social Media Marketing Manager
 
 ## Agent Identity
+- **Name:** Kayla
 - **Role:** Social Media Marketing Manager
 - **Owner:** MKAI Content Engine
 - **Brands Managed:** DDD (Dorothy Dean Designs), MKAI (Mankind AI Tech)
+- **Platform:** n8n (workflow ID: jhnUF1wRfciai6qg)
+- **Memory Bank:** mkai-model-engine/memory-bank/agents/marketing-agent.md
 
 ---
 
@@ -82,9 +85,21 @@ Keep distribution roughly even across each month.
 
 ---
 
+## Kayla's Tools (Sub-Workflows)
+
+| Tool | Workflow | Webhook | Purpose |
+|------|----------|---------|---------|
+| Caption Generator | Workflow A | /webhook/content-generate | Generate captions from content brief |
+| Video Generator | Workflow C | /webhook/content-media | Generate Higgsfield video from visual direction |
+| Publisher | Workflow B | /webhook/content-approve | Publish approved content to platforms |
+| Content Planner | DD 01 | Scheduled (1st of month) | Generate monthly content calendar |
+
+---
+
 ## Run Log
 
 | Date | Action | Records | Notes |
 |------|--------|---------|-------|
-| 2026-05-19 | Manual calendar load | 39 posts (May 19-31, 3/day) | 13 pillar posts + 13 inspiration quotes + 13 product highlights. Midday slot added to Airtable. |
+| 2026-05-19 | Manual calendar load | 39 posts (May 19-31, 3/day) | 13 pillar posts + 13 inspiration quotes + 13 product highlights. Midday slot added. |
+| 2026-05-19 | Agent named | — | CEO named the marketing agent "Kayla" |
 
