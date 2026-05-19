@@ -20,7 +20,7 @@ Each day focuses on **1 LIFT pillar**. Three posts per day:
 ### Post 2 — Inspiration Quote
 - Focus: Scripture, affirmation, or thought-leadership tied to the daily pillar
 - Format: Text overlay on branded visual or short video
-- Slot: Midday or early afternoon
+- Slot: Midday
 - Goal: Saves, shares, reach
 
 ### Post 3 — Highlight Product
@@ -77,6 +77,7 @@ Keep distribution roughly even across each month.
 - **Table:** DD Content Queue (tblQ9hxifG4Y3Uech)
 - **Base:** Social Media Planner (appr0OjO1x803LE3z)
 - **View:** Calendar view on Date field
+- **Slot Options:** Morning, Midday, Evening
 - **Status Flow:** Generate Content → Caption Ready → Ready to Post → Posted
 
 ---
@@ -85,5 +86,5 @@ Keep distribution roughly even across each month.
 
 | Date | Action | Records | Notes |
 |------|--------|---------|-------|
-| 2026-05-19 | Manual calendar load | 26 posts (May 19-31) | Initial content loaded by MKAI CEO |
+| 2026-05-19 | Manual calendar load | 39 posts (May 19-31, 3/day) | 13 pillar posts + 13 inspiration quotes + 13 product highlights. Midday slot added to Airtable. |
 
