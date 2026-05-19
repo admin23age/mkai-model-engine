@@ -4,48 +4,65 @@
 - **Name:** Kayla
 - **Role:** Social Media Marketing Manager
 - **Owner:** MKAI Content Engine
-- **Brands Managed:** DDD (Dorothy Dean Designs), MKAI (Mankind AI Tech)
 - **Platform:** n8n (workflow ID: jhnUF1wRfciai6qg)
 - **Memory Bank:** mkai-model-engine/memory-bank/agents/marketing-agent.md
 
 ---
 
+## Multi-Brand Routing
+
+Kayla manages multiple brands from a single agent. Each brand has its own base, table, and webhook.
+
+### Brand: DDD (Dorothy Dean Designs)
+- **Base:** Social Media Planner (appr0OjO1x803LE3z)
+- **Table:** DD Content Queue (tblQ9hxifG4Y3Uech)
+- **Workflow A webhook:** /webhook/content-generate
+- **Workflow C webhook:** /webhook/content-media
+- **Schedule:** Daily 8AM ET
+- **Pillars:** Legacy, Identity, Faith, Tomorrow (LIFT framework)
+
+### Brand: MKAI (Mankind AI Tech)
+- **Base:** MKAI Social Media Planner (appYYhvlGoQuJuu5a)
+- **Table:** MKAI Content Queue (tblMyGWOlqercgwVV)
+- **Workflow A webhook:** /webhook/mkai-content-generate
+- **Schedule:** Daily 9AM ET
+- **Pillars:** AI Strategy, Automation, Case Studies, Thought Leadership
+
+### Adding a New Client
+1. Create new Airtable base from template schema
+2. Create Content Queue table with standard fields
+3. Clone Workflow A with new base/table IDs and brand config
+4. Add brand section to this memory bank
+5. Add schedule trigger to Kayla agent workflow
+
+---
+
 ## Daily Posting Format (CEO Decision — May 19, 2026)
 
-Each day focuses on **1 LIFT pillar**. Three posts per day:
+Each day focuses on **1 pillar**. Three posts per day:
 
 ### Post 1 — Pillar Post
-- Focus: The daily LIFT pillar (Legacy, Identity, Faith, or Tomorrow)
-- Tone: Matches pillar voice from brand playbook
 - Slot: Morning
 - Goal: Community, engagement, conversation
 
 ### Post 2 — Inspiration Quote
-- Focus: Scripture, affirmation, or thought-leadership tied to the daily pillar
-- Format: Text overlay on branded visual or short video
 - Slot: Midday
 - Goal: Saves, shares, reach
 
-### Post 3 — Highlight Product
-- Focus: Specific LIFT collection piece tied to the daily pillar
-- Tone: Product-forward, styling tips, shopping intent
+### Post 3 — Highlight Product/Service
 - Slot: Evening
-- Goal: Clicks, conversions, shop link traffic
+- Goal: Clicks, conversions, traffic
 
 ---
 
 ## Pillar Rotation
 
-Rotate pillars across the week. Example cycle:
-- Monday: Legacy
-- Tuesday: Identity
-- Wednesday: Faith
-- Thursday: Tomorrow
-- Friday: Legacy
-- Saturday: Identity
-- Sunday: Faith
-
-Keep distribution roughly even across each month.
+Rotate pillars across the week. Keep distribution even across each month.
+- Monday: Pillar 1
+- Tuesday: Pillar 2
+- Wednesday: Pillar 3
+- Thursday: Pillar 4
+- Friday-Sunday: Rotate remaining
 
 ---
 
@@ -76,30 +93,29 @@ Keep distribution roughly even across each month.
 
 ---
 
+## Kayla's Tools (Sub-Workflows)
+
+| Tool | DDD Workflow | MKAI Workflow | Purpose |
+|------|-------------|---------------|---------|
+| Caption Generator | Workflow A (8mmfbyucp1sBnhHg) | Workflow A (34W5VGQAt03NZyOS) | Generate captions |
+| Video Generator | Workflow C (X1kDAxH1uZaVHdX4) | TBD | Generate video |
+| Publisher | Workflow B (xnrc51p90Z6AinUu) | TBD | Publish to platforms |
+| Content Planner | DD 01 (bIR3eY2eFpNXYxwy) | TBD | Monthly calendar |
+
+---
+
 ## Content Calendar Source
-- **Table:** DD Content Queue (tblQ9hxifG4Y3Uech)
-- **Base:** Social Media Planner (appr0OjO1x803LE3z)
-- **View:** Calendar view on Date field
 - **Slot Options:** Morning, Midday, Evening
 - **Status Flow:** Generate Content → Caption Ready → Ready to Post → Posted
 
 ---
 
-## Kayla's Tools (Sub-Workflows)
-
-| Tool | Workflow | Webhook | Purpose |
-|------|----------|---------|---------|
-| Caption Generator | Workflow A | /webhook/content-generate | Generate captions from content brief |
-| Video Generator | Workflow C | /webhook/content-media | Generate Higgsfield video from visual direction |
-| Publisher | Workflow B | /webhook/content-approve | Publish approved content to platforms |
-| Content Planner | DD 01 | Scheduled (1st of month) | Generate monthly content calendar |
-
----
-
 ## Run Log
 
-| Date | Action | Records | Notes |
-|------|--------|---------|-------|
-| 2026-05-19 | Manual calendar load | 39 posts (May 19-31, 3/day) | 13 pillar posts + 13 inspiration quotes + 13 product highlights. Midday slot added. |
-| 2026-05-19 | Agent named | — | CEO named the marketing agent "Kayla" |
+| Date | Action | Brand | Records | Notes |
+|------|--------|-------|---------|-------|
+| 2026-05-19 | Calendar load | DDD | 39 posts (May 19-31, 3/day) | LIFT pillars, Midday slot added |
+| 2026-05-19 | Calendar load | MKAI | 39 posts (May 19-31, 3/day) | AI pillars, 4 content pillars |
+| 2026-05-19 | Agent named | — | — | CEO named agent "Kayla" |
+| 2026-05-19 | Multi-brand routing | — | — | Documented DDD + MKAI base/table/webhook mapping |
 
