@@ -49,7 +49,7 @@ Added `Media Type` single-select (Video / Image) to both queues — DDD `fld1A2d
 
 1. ✅ **Workflow A v2** — built (`CROUAAn3CO6zQyBr`).
 2. ✅ **Router v2 image-skip** — copy approved + Image → Ready to Post; Video → Ready to Generate. Shared route-compute design.
-3. **Workflow C v2** (video only) — read approved `Visual Prompt` field; brand-route base+table; after render set status + post Media card (mei_approve_media/owner_approve_media/reject_media). NOT needed for image posts. Higgsfield + Google Drive credentials must auto-bind.
+3. ✅ **Workflow C v2** (video) — built (`5yFlDpd2t5lgJifp`). Brand-routes base+table; uses approved `Visual Prompt` field for render; sets `Media Review` + posts Media card (mei/owner/reject). Airtable/Drive/Slack auto-bound. ⚠️ The 3 Higgsfield HTTP nodes need the header-auth credential selected manually in the n8n UI.
 4. **Publisher wiring** — who posts `Ready to Post` to LinkedIn/TikTok/IG for MKAI? Existing publishers are DDD-oriented; MKAI publisher path + IG account pending.
 5. **Test** router v2 + A v2 on a temp record; confirm both-flag advance, image-skip, reject.
 6. **Cutover** — repoint Slack app interactivity URL to `/content-approve-v2`; trigger A v2 via `/content-generate-v2`; deactivate live A/B; activate v2.

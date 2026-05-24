@@ -149,9 +149,14 @@ Both managed clusters are **complete** — managed by reusing existing live work
 no net-new builds pending. This decision is final; do not build redundant supervisor bots
 for these clusters.
 
-- ✅ **Social Media cluster (Mei's team) — DONE.** Planner → Workflow A (Jamal) → Workflow B
-  approval (Mei, `xnrc51p90Z6AinUu`) → Workflow C → Publisher. Approval handled by the existing
-  Workflow B; rejection feedback loops back to A. No new approval workflow.
+- ✅ **Social Media cluster (Mei's team) — DONE; v2 dual-sign-off pipeline built 2026-05-24.**
+  Planner → Workflow A (Jamal) → approval (Mei) → Workflow C (media) → Publisher.
+  - **v1 (live):** Workflow A `34W5VGQAt03NZyOS` → Workflow B `xnrc51p90Z6AinUu` → Workflow C `X1kDAxH1uZaVHdX4`. Single approve. MKAI base-misrouting bug (points MKAI at DDD base).
+  - **v2 (built, INACTIVE, pending cutover):** dual sign-off Mei + Owner (any order, first 90 days). Brand-routes base+table correctly (DDD `appr0OjO1x803LE3z`, MKAI `app3AQ14VJHqlkoVG`). See `plans/2026-05-24_social-dual-signoff-gates.md`.
+    - Workflow A v2 (Generator + Copy card, Announcement mode) `CROUAAn3CO6zQyBr` — webhook `/content-generate-v2`
+    - Approval Router v2 (Copy + Media gates, image-skip) `oiQnYlvmT06tRctH` — webhook `/content-approve-v2`
+    - Workflow C v2 (Media, uses approved Visual Prompt) `5yFlDpd2t5lgJifp` — webhook `/content-media-v2`
+    - Cutover: repoint Slack app interactivity URL to `/content-approve-v2`; activate v2; deactivate v1. Higgsfield cred needs manual UI bind on C v2.
 - ✅ **Grant Writing cluster (Aris's team) — DONE.** Finder → Writer → Doc Creator → Deadline
   Scanner (Elena executes, chained via Airtable) + Grant & Profile Auto-Updater and grant memory
   bank (Aris's continuous improvement). No new orchestrator workflow.
