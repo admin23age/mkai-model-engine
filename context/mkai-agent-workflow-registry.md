@@ -54,6 +54,7 @@ Receives output from: MKAI Daily Ops Digest, MKAI Daily Lead & CRM Scanner, MKAI
 | MKAI Payment Confirmation | `FGNqSaRZyQenokG2` | ❌ |
 
 #### Mateo Silva — Sales Development Rep *(reports to Natalie)*
+*Scope includes **outbound** — actively sourcing/finding new leads, not just handling inbound. No outbound-prospecting workflow exists yet → Phase 2 build candidate (lead discovery → enrich → Zoho/Airtable → outreach).*
 | Workflow | ID | Active |
 |---|---|---|
 | MKAI Sales Agent | `moIWsyobqqRVaVLR` | ✅ |
@@ -73,8 +74,11 @@ Receives output from: MKAI Daily Ops Digest, MKAI Daily Lead & CRM Scanner, MKAI
 | DD Knowledge Base Search | `9Moz2uaSlJ4GkY8o` | ✅ |
 | DDD - Email Assistant with Deadlines | `ckTMZBMLujnjixDO` | ❌ |
 
-### Mei-Ling Vance — Marketing Manager
-*Owns content strategy + approval gate. Approves/rejects Jamal's content via Workflow B.*
+### Mei-Ling Vance — Marketing Manager — *manages the SOCIAL MEDIA cluster*
+*Mei's team (Mei + Jamal) manages all social media workflows end-to-end.
+Approval reuses the EXISTING Workflow B (`xnrc51p90Z6AinUu`) — no new approval workflow.
+Pipeline already chains via Airtable status fields: Planner → Workflow A (Jamal generates)
+→ Workflow B (Mei approves/rejects, rejection feedback loops back to A) → Workflow C (media) → Publisher.*
 | Workflow | ID | Active |
 |---|---|---|
 | DDD + MKAI Content Engine — Workflow B (Approve & Route) | `xnrc51p90Z6AinUu` | ✅ |
@@ -101,8 +105,10 @@ Receives output from: MKAI Daily Ops Digest, MKAI Daily Lead & CRM Scanner, MKAI
 | DDDesigns Avatar Generator v3 - Two Pass Compositing | `zVXad9UrImhiH8Dz` | ✅ |
 | Model Submit → Mockup Generator | `r84WZTzRQQ3DLSWw` | ✅ |
 
-### Dr. Aris Thorne — Operations Manager
-*Owns grant-program oversight + continuous improvement. Monitors Elena's output, strengthens the offering.*
+### Dr. Aris Thorne — Operations Manager — *manages the GRANT WRITING cluster*
+*Aris's team (Aris + Elena) manages all grant-writing workflows end-to-end.
+Elena executes the pipeline (Finder → Writer → Doc Creator → Deadline Scanner, chained via Airtable);
+Aris oversees quality + continuous improvement via the Grant & Profile Auto-Updater and grant memory bank.*
 | Workflow | ID | Active |
 |---|---|---|
 | MKAI Grant & Profile Auto-Updater | `ptj9VyqWkrgUK8Ho` | ✅ |
@@ -126,21 +132,38 @@ Receives output from: MKAI Daily Ops Digest, MKAI Daily Lead & CRM Scanner, MKAI
 
 ---
 
-## Phase 2 — Manager Supervisor Workflows (to build)
+## Managed Clusters (current direction)
 
-Per the "tag now, then supervisors" decision, the next pass builds orchestrator
-workflows that give each manager active control over their reports' workflows:
+Management is assigned at the **team/cluster** level, reusing existing workflows — not by
+building redundant supervisor bots. Two clusters are managed pipelines today:
 
-1. **Mei — Content Approval Manager.** Watches Workflow A output → reviews against brand
-   guide → routes Approve/Reject into Workflow B (`xnrc51p90Z6AinUu`). Feeds rejection
-   feedback back to Jamal's Workflow A (already reads a Rejection Feedback field).
-2. **Dr. Aris — Grant Continuous-Improvement Manager.** Reviews completed grant runs from
-   Elena's pipeline, scores quality, updates the grant memory bank, and proposes prompt/offering
-   improvements. Builds on `ptj9VyqWkrgUK8Ho`.
-3. **Elena — Grant Workflow Orchestrator.** Single trigger chaining Finder → Writer →
-   Doc Creator → Deadline Scanner with state in Airtable.
-4. **Natalie — already live** as MKAI Supervisor (`FZJQhZaT81gLwiMP`); extend to dispatch
-   Mateo/Tariq workers.
+- **Social Media cluster → Mei's team.** Planner → Workflow A (Jamal) → Workflow B approval
+  (Mei) → Workflow C → Publisher. **Approvals use the existing Workflow B** (`xnrc51p90Z6AinUu`).
+  No new approval workflow.
+- **Grant Writing cluster → Aris's team.** Finder → Writer → Doc Creator → Deadline Scanner
+  (Elena executes); Grant & Profile Auto-Updater + memory bank (Aris's continuous improvement).
+
+## Cluster management — CLOSED (2026-05-24)
+
+Both managed clusters are **complete** — managed by reusing existing live workflows, with
+no net-new builds pending. This decision is final; do not build redundant supervisor bots
+for these clusters.
+
+- ✅ **Social Media cluster (Mei's team) — DONE.** Planner → Workflow A (Jamal) → Workflow B
+  approval (Mei, `xnrc51p90Z6AinUu`) → Workflow C → Publisher. Approval handled by the existing
+  Workflow B; rejection feedback loops back to A. No new approval workflow.
+- ✅ **Grant Writing cluster (Aris's team) — DONE.** Finder → Writer → Doc Creator → Deadline
+  Scanner (Elena executes, chained via Airtable) + Grant & Profile Auto-Updater and grant memory
+  bank (Aris's continuous improvement). No new orchestrator workflow.
+
+## Phase 2 — remaining net-new builds (gaps only)
+
+Only one real gap remains; do not duplicate working pipelines:
+
+1. ⏳ **Mateo — Outbound Prospecting** *(net-new; no existing workflow).* Lead discovery → enrich →
+   Zoho/Airtable → outreach sequence. Under Natalie. **Plan:** see `plans/2026-05-24_mateo-outbound-prospecting.md`.
+2. **Natalie — already live** as MKAI Supervisor (`FZJQhZaT81gLwiMP`); optionally extend to
+   dispatch Mateo/Tariq workers.
 
 ---
 

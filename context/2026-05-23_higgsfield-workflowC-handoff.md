@@ -63,4 +63,16 @@ Wire Higgsfield video generation into n8n **Workflow C** (`X1kDAxH1uZaVHdX4`, "M
 4. **Poll Higgsfield Status · URL** → `=https://platform.higgsfield.ai/requests/{{ $('Higgsfield Generate').item.json.request_id }}/status` + attach Higgsfield Auth (was wrongly "Square Production").
 5. **Extract Video URL · JS** → read `data.video.url`; throw on `failed`/`nsfw` or missing url.
 6. **Write Media URL · columns** → restore leading `=`: `={{ { mappingMode: "defineBelow", value: { id: $("Build Higgsfield Prompt").item.json.recordId, "Media URL": $json.webViewLink, "Content Status": "Generate Content" }, matchingColumns: ["id"] } }}`
-7. **Build Higgsfield Prompt · JS** → drop pillar→model map; pull `f['Reference Image'][0].url` into `image_url`; emit `{ recordId, image_url, prompt, pillar, title }`.
+7. **Build Higgsfield Prompt · JS** → drop pillar→model map; emit `{ recordId, image_url, prompt, pillar, title }`. ⚠️ **Reference Image is multi-attachment AND mixed-type** (rows hold 4+ images, sometimes a `.mp4` too). Do NOT use `[0]` — pick the first *image-type* attachment:
+   ```js
+   const refs = Array.isArray(f['Reference Image']) ? f['Reference Image'] : [];
+   const firstImage = refs.find(a => a && typeof a.type === 'string' && a.type.startsWith('image/'));
+   const refImage = firstImage ? firstImage.url : '';
+   ```
+
+## Preflight results 2026-05-23
+- **Balance: 91 credits** (handoff said 116 — ~25 consumed since). Plus plan.
+- **Cost: ~22.5 credits / 5s 720p std** (MCP `seedance_2_0` estimate; REST pro endpoint may differ). → only ~4 runs left on current balance. **Top up before batch runs.**
+- **Seedance 2.0 constraints**: accepts `image`/`start_image`/`end_image`/`video`/`audio` roles; aspect `9:16` ok; duration 4–15s; resolution 480/720/1080p (default 720p).
+- **Airtable attachment URLs are temporary signed `v5.airtableusercontent.com` links** — they expire. Fine here because the workflow reads the record live then submits immediately; don't cache them.
+- **Open question for user**: which Reference Image is the *intended* video source when a row has several? Current logic = first image-type attachment, which may not be the best frame. May want a convention (e.g. first attachment is always the reference).
