@@ -41,13 +41,23 @@ MKAI `tblUkPs0T6wTtLbaT`: Copy Approved Mei `fldcBFlVyoW1s4GVu`, Copy Approved O
 
 Slack interactive buttons post to ONE app-level "Interactivity Request URL", not per-button. It currently points at the live Workflow B webhook (`/content-approve`). To TEST v2: temporarily point it at `/content-approve-v2`. At CUTOVER: either repoint the Slack app URL to `/content-approve-v2`, or rename the v2 webhook path to `/content-approve` after deactivating live B.
 
+## Media Type field (image vs video routing)
+
+Added `Media Type` single-select (Video / Image) to both queues — DDD `fld1A2dnyOr1qIEnh`, MKAI `fldK3VENtCc00HlhN`. Router reads it on copy approval: **Image → Ready to Post (skip video); Video → Ready to Generate (render).** Empty defaults to Video.
+
 ## Remaining work
 
 1. ✅ **Workflow A v2** — built (`CROUAAn3CO6zQyBr`).
-2. **Workflow C v2** — read approved `Visual Prompt` field; brand-route base+table; after render set `Media Review` + post Media card (mei_approve_media/owner_approve_media/reject_media). (Skip for image-only posts.)
-3. **Test** router v2 + A v2 on a temp record; confirm both-flag advance + reject.
-4. **Cutover** — repoint card webhooks + Slack interactivity URL to v2; set planner/automation to call `/content-generate-v2`; deactivate live A/B; activate v2.
-5. **90-day sunset** — remove Owner co-sign requirement (~2026-08-22).
+2. ✅ **Router v2 image-skip** — copy approved + Image → Ready to Post; Video → Ready to Generate. Shared route-compute design.
+3. **Workflow C v2** (video only) — read approved `Visual Prompt` field; brand-route base+table; after render set status + post Media card (mei_approve_media/owner_approve_media/reject_media). NOT needed for image posts. Higgsfield + Google Drive credentials must auto-bind.
+4. **Publisher wiring** — who posts `Ready to Post` to LinkedIn/TikTok/IG for MKAI? Existing publishers are DDD-oriented; MKAI publisher path + IG account pending.
+5. **Test** router v2 + A v2 on a temp record; confirm both-flag advance, image-skip, reject.
+6. **Cutover** — repoint Slack app interactivity URL to `/content-approve-v2`; trigger A v2 via `/content-generate-v2`; deactivate live A/B; activate v2.
+7. **90-day sunset** — remove Owner co-sign requirement (~2026-08-22).
+
+## Launch post path (image-only) — READY pending cutover + publisher
+
+For "We Are LIVE": create MKAI record (brand MKAI, Media Type=Image, isAnnouncement, image in Reference Image) → A v2 generates captions + Copy card → Mei+Owner approve → Ready to Post. No video render. Then publisher (or manual post) to LI/TikTok; IG pending account.
 
 ## First post queued (MKAI launch announcement)
 
