@@ -33,16 +33,25 @@ MKAI `tblUkPs0T6wTtLbaT`: Copy Approved Mei `fldcBFlVyoW1s4GVu`, Copy Approved O
 ## Workflows
 
 - **NEW — Approval Router v2 (Dual Sign-off)** `oiQnYlvmT06tRctH` — INACTIVE, temp webhook `/content-approve-v2`. 27 nodes. Brand-routes base+table. Actions: `mei_approve_copy`, `owner_approve_copy`, `reject_copy`, `mei_approve_media`, `owner_approve_media`, `reject_media`. Replaces live B at cutover.
+- **NEW — Workflow A v2 (Generator + Dual-Gate Card)** `CROUAAn3CO6zQyBr` — INACTIVE, temp webhook `/content-generate-v2`. 15 nodes. Brand-routes base+table (MKAI fix). Announcement mode (skips pillar tone). Detailed audience-tailored visual_prompt. Sets status `Copy Review`. Posts Copy card w/ buttons mei_approve_copy/owner_approve_copy/reject_copy. Memory-bank fetch dropped in clone (re-add at cutover if wanted). Anthropic model `claude-sonnet-4-6`.
 - Slack channel for cards: `C0B2ZKMKWN7`.
-- Credentials (auto-bound): Airtable `Airtable Personal Access Token account`, Slack `Slack OAuth2 API`.
+- Credentials (auto-bound): Airtable `Airtable Personal Access Token account`, Slack `Slack OAuth2 API`, Anthropic `Anthropic account`.
+
+## Slack interactivity URL (cutover-critical)
+
+Slack interactive buttons post to ONE app-level "Interactivity Request URL", not per-button. It currently points at the live Workflow B webhook (`/content-approve`). To TEST v2: temporarily point it at `/content-approve-v2`. At CUTOVER: either repoint the Slack app URL to `/content-approve-v2`, or rename the v2 webhook path to `/content-approve` after deactivating live B.
 
 ## Remaining work
 
-1. **Workflow A edit** — Copy review card with 3 buttons (mei_approve_copy/owner_approve_copy/reject_copy), set status `Copy Review`, write detailed audience-tailored visual prompt. Fix base-switch for MKAI. Drop brief gate.
-2. **Workflow C edit** — read approved `Visual Prompt` field; after render set `Media Review` + post Media card (mei_approve_media/owner_approve_media/reject_media). Fix base-switch for MKAI.
-3. **Test** router v2 on a temp record (Slack button payloads), confirm both-flag advance + reject.
-4. **Cutover** — point card buttons at `/content-approve-v2`, deactivate live B (`xnrc51p90Z6AinUu`), repoint v2 webhook to `/content-approve`, activate.
+1. ✅ **Workflow A v2** — built (`CROUAAn3CO6zQyBr`).
+2. **Workflow C v2** — read approved `Visual Prompt` field; brand-route base+table; after render set `Media Review` + post Media card (mei_approve_media/owner_approve_media/reject_media). (Skip for image-only posts.)
+3. **Test** router v2 + A v2 on a temp record; confirm both-flag advance + reject.
+4. **Cutover** — repoint card webhooks + Slack interactivity URL to v2; set planner/automation to call `/content-generate-v2`; deactivate live A/B; activate v2.
 5. **90-day sunset** — remove Owner co-sign requirement (~2026-08-22).
+
+## First post queued (MKAI launch announcement)
+
+"We Are LIVE — Your Human ALLY in the AI Revolution". Announcement (no pillar). Platforms: LinkedIn + TikTok now, IG pending account creation. CTA: https://calendly.com/mankindaitech-support/ai-snapshot + mankindaitech.com. Static graphic (skip video gen) — user attaches PNG to record's Reference Image. Needs: image attached + slot/date.
 
 ## Client template / future clients
 
