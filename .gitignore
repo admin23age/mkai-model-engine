@@ -36,3 +36,6 @@ tmp/
 temp/
 scratch/
 grant_agent_temp/
+
+# n8n workflow exports — contain live credentials, never commit
+automations/n8n-export-staging/
