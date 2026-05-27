@@ -1,0 +1,214 @@
+<!-- ============================================================
+     Dorothy Dean Designs — About Page
+     Self-contained block for a Wix Custom Code element or
+     Velo HTML component. All styles inline/scoped — no external deps.
+     BEFORE PUBLISH: edit the two hrefs below (/shop and /lift)
+     to match your live Wix routes.
+     ============================================================ -->
+<div class="ddd-about">
+  <style>
+    /* ---- Brand tokens (locked palette) ---- */
+    .ddd-about {
+      --gold: #B27F2C;
+      --soft-yellow: #F7DE7B;
+      --royal-purple: #92278F;
+      --magenta: #DB27DF;
+      --pink: #EE2AC5;
+      --wine: #9E1F63;
+      --black: #000000;
+      --white: #FFFFFF;
+
+      background: var(--black);
+      color: var(--white);
+      font-family: "Helvetica Neue", Arial, system-ui, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .ddd-about * { box-sizing: border-box; }
+
+    .ddd-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 72px 28px 88px;
+    }
+
+    /* ---- Type hierarchy ---- */
+    .ddd-kicker {
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 600;
+      margin: 0 0 18px;
+    }
+    .ddd-tagline {
+      font-size: clamp(20px, 4vw, 30px);
+      font-style: italic;
+      font-weight: 300;
+      color: var(--soft-yellow);
+      margin: 0 0 56px;
+      max-width: 640px;
+    }
+    .ddd-h2 {
+      font-size: clamp(26px, 5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0 0 20px;
+      color: var(--white);
+    }
+    .ddd-h2 .accent { color: var(--magenta); }
+    .ddd-p {
+      font-size: clamp(16px, 2.2vw, 18px);
+      color: #e8e8e8;
+      margin: 0 0 18px;
+    }
+    .ddd-section { margin-bottom: 64px; }
+    .ddd-rule {
+      height: 1px;
+      border: 0;
+      background: linear-gradient(90deg, var(--royal-purple), var(--magenta), var(--wine));
+      margin: 0 0 64px;
+      opacity: 0.7;
+    }
+
+    /* ---- LIFT pillars ---- */
+    .ddd-lift { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+    .ddd-lift li {
+      border-left: 3px solid var(--gold);
+      padding: 14px 0 14px 20px;
+    }
+    .ddd-lift .letter {
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 19px;
+      margin-right: 6px;
+    }
+    .ddd-lift .label { font-weight: 700; color: var(--white); }
+    .ddd-lift .soon {
+      font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--pink); margin-left: 8px;
+    }
+    .ddd-lift .desc { color: #cfcfcf; }
+
+    /* ---- Values pills ---- */
+    .ddd-vals { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; }
+    .ddd-vals span {
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 7px 16px;
+      font-size: 14px;
+      color: #f0f0f0;
+    }
+    .ddd-vals.not span { border-color: var(--wine); color: #d9a9c2; }
+
+    /* ---- Scripture pull ---- */
+    .ddd-scripture {
+      border-left: 4px solid var(--royal-purple);
+      background: linear-gradient(90deg, rgba(146,39,143,0.18), transparent);
+      padding: 28px 30px;
+      margin: 0 0 22px;
+      border-radius: 4px;
+    }
+    .ddd-scripture blockquote {
+      margin: 0;
+      font-size: clamp(18px, 3vw, 24px);
+      font-style: italic;
+      font-weight: 300;
+      color: #f6f6f6;
+    }
+    .ddd-scripture cite {
+      display: block;
+      margin-top: 16px;
+      font-style: normal;
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 15px;
+    }
+
+    /* ---- CTA buttons ---- */
+    .ddd-cta { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }
+    .ddd-btn {
+      display: inline-block;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      padding: 15px 34px;
+      border-radius: 4px;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .ddd-btn:hover { transform: translateY(-2px); opacity: 0.92; }
+    .ddd-btn-primary { background: var(--gold); color: var(--black); }
+    .ddd-btn-secondary {
+      background: transparent; color: var(--white);
+      border: 1.5px solid var(--magenta);
+    }
+
+    /* ---- Mobile breakpoint ---- */
+    @media (max-width: 600px) {
+      .ddd-wrap { padding: 48px 20px 64px; }
+      .ddd-section { margin-bottom: 48px; }
+      .ddd-rule { margin-bottom: 48px; }
+      .ddd-cta { flex-direction: column; }
+      .ddd-btn { text-align: center; }
+    }
+  </style>
+
+  <div class="ddd-wrap">
+
+    <p class="ddd-kicker">About Dorothy Dean Designs</p>
+    <p class="ddd-tagline">Faith is the foundation. Black culture is the expression. Peace is the outcome.</p>
+
+    <section class="ddd-section">
+      <h2 class="ddd-h2">Our <span class="accent">Story</span></h2>
+      <p class="ddd-p">Dorothy Dean Designs began with a simple conviction: what you wear should remind you who you are becoming.</p>
+      <p class="ddd-p">We are a lifestyle apparel brand rooted in faith, shaped by Black culture, and committed to peace, self-worth, and legacy. Every piece we make is a wearable reminder — of faith, identity, confidence, and purpose. Not loud. Not trend-chasing. Intentional.</p>
+      <p class="ddd-p">We create for the faith-driven who refuse to choose between their belief and their style. For the ones building something that outlasts them.</p>
+    </section>
+
+    <hr class="ddd-rule" />
+
+    <section class="ddd-section">
+      <h2 class="ddd-h2">What We Stand For — <span class="accent">LIFT</span></h2>
+      <ul class="ddd-lift">
+        <li><span class="letter">L</span><span class="label">Legacy.</span> <span class="desc">Honoring the history, the culture, and the shoulders we stand on.</span></li>
+        <li><span class="letter">I</span><span class="label">Identity.</span> <span class="desc">Self-worth and confidence. Who you are, and who you are becoming.</span></li>
+        <li><span class="letter">F</span><span class="label">Faith.</span> <span class="desc">Spiritual grounding. Quiet strength, not performance.</span></li>
+        <li><span class="letter">T</span><span class="label">Tomorrow.</span><span class="soon">Coming Soon</span> <span class="desc">Future-focused storytelling for the next generation.</span></li>
+      </ul>
+    </section>
+
+    <hr class="ddd-rule" />
+
+    <section class="ddd-section">
+      <h2 class="ddd-h2">Mission &amp; <span class="accent">Values</span></h2>
+      <p class="ddd-p">We create wearable reminders of faith, identity, confidence, and purpose — designed to affirm who you are becoming. If it doesn't support faith, identity, confidence, or purpose, it doesn't ship.</p>
+      <div class="ddd-vals">
+        <span>Rooted</span><span>Elevated</span><span>Intentional</span><span>Empowering</span>
+      </div>
+      <div class="ddd-vals not">
+        <span>Not trend-driven</span><span>Not loud</span><span>Not mass-produced in spirit</span><span>Not performative</span>
+      </div>
+    </section>
+
+    <hr class="ddd-rule" />
+
+    <section class="ddd-section">
+      <h2 class="ddd-h2">Faith &amp; <span class="accent">Purpose</span></h2>
+      <div class="ddd-scripture">
+        <blockquote>"But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."</blockquote>
+        <cite>— Isaiah 40:31</cite>
+      </div>
+      <p class="ddd-p">This is the lift. This is the purpose. Wear it as a reminder.</p>
+    </section>
+
+    <div class="ddd-cta">
+      <!-- EDIT THESE HREFS to match your live Wix routes before publishing -->
+      <a class="ddd-btn ddd-btn-primary" href="/shop">Shop Apparel</a>
+      <a class="ddd-btn ddd-btn-secondary" href="/lift">View LIFT</a>
+    </div>
+
+  </div>
+</div>
