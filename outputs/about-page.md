@@ -45,4 +45,4 @@ This is the lift. This is the purpose. Wear it as a reminder.
 
 ---
 
-[Shop Apparel](/shop) · [View LIFT](/lift)
+[Shop Apparel](/category/all-products) · [View LIFT](/collectons)
