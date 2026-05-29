@@ -6,8 +6,8 @@
 - **Role:** Marketing Manager
 - **Function:** Marketing Supervisor
 - **Reports to:** Chloe Dubois (Chief of Staff)
-- **Direct reports:** Jamal Washington (Content Designer)
-- **Hands off to:** Jamal Washington (creative production, content assets)
+- **Direct reports:** Jamal Washington (Content Designer), Website Manager Agent (in development)
+- **Hands off to:** Jamal Washington (creative production, content assets); Website Manager Agent (website builds + SEO)
 - **Owner:** MKAI Content Engine
 - **Platform:** n8n (workflow ID: jhnUF1wRfciai6qg)
 - **Memory Bank:** model-engine/memory-bank/agents/mei-ling-vance.md
@@ -144,4 +144,5 @@ Rotate pillars across the week. Keep distribution even across each month.
 | 2026-05-19 | Calendar load | MKAI | 39 posts (May 19-31, 3/day) | AI pillars, 4 content pillars |
 | 2026-05-19 | Agent named | — | — | CEO named agent "Kayla" |
 | 2026-05-19 | Multi-brand routing | — | — | Documented DDD + MKAI base/table/webhook mapping |
+| 2026-05-29 | Added Website Manager Agent | — | — | New direct report (placeholder, in development) added alongside Jamal per spec v1.0; see `website-manager-agent.md` |
 
