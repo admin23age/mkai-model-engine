@@ -4,7 +4,7 @@ title: Client Scorecard Delivery
 owner-agent: natalie-nair.md
 consumed-by: Receiving AI Assessment Form (cFXR1KsgAw9zqm3W) → node "Send an Email"
 version: 1.0.0
-status: review
+status: approved
 last-updated: 2026-06-03
 source: client-facing rewrite of the live "Send an Email" node (internal copy replaced)
 ---
@@ -18,10 +18,10 @@ source: client-facing rewrite of the live "Send an Email" node (internal copy re
 - **To:** `={{ $('Jotform Trigger').item.json['Business Email'] }}`  (was malformed/double-wrapped)
 - **From:** `support@mankindaitech.com`
 
-> **⚠️ Body rewritten — pending your approval before push.** The live body was internal-facing
-> ("ready for review", "Vapi is calling the client now. Check Airtable.") and cannot go to a client.
-> Proposed client-facing copy below. Also confirm the Google Drive `webViewLink` is shared so the
-> recipient can open it (Drive links are often restricted by default).
+> **Approved (2026-06-03):** goes straight to the client. The previous internal-facing body
+> ("Vapi is calling the client now. Check Airtable.") was replaced with the client copy below.
+> Confirm the Google Drive `webViewLink` is shared ("anyone with the link") so the recipient
+> can open it — Drive links are often restricted by default.
 
 ## Subject
 ```
@@ -47,3 +47,4 @@ support@mankindaitech.com</p>
 | Version | Date | Change | By |
 |---|---|---|---|
 | 1.0.0 | 2026-06-03 | Client-facing rewrite; To→Business Email, From→support@mankindaitech.com | |
+| 1.0.0 | 2026-06-03 | Approved — delivers straight to client | |
