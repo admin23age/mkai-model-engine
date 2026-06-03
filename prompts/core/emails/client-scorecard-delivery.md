@@ -4,7 +4,7 @@ title: Client Scorecard Delivery
 owner-agent: natalie-nair.md
 consumed-by: Receiving AI Assessment Form (cFXR1KsgAw9zqm3W) → node "Send an Email"
 version: 1.0.0
-status: approved
+status: live
 last-updated: 2026-06-03
 source: client-facing rewrite of the live "Send an Email" node (internal copy replaced)
 ---
@@ -48,3 +48,4 @@ support@mankindaitech.com</p>
 |---|---|---|---|
 | 1.0.0 | 2026-06-03 | Client-facing rewrite; To→Business Email, From→support@mankindaitech.com | |
 | 1.0.0 | 2026-06-03 | Approved — delivers straight to client | |
+| 1.0.0 | 2026-06-03 | Marked live — verify the 4 node values are saved in n8n "Send an Email" | |
