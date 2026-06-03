@@ -26,7 +26,7 @@ New AI Assessment — {{ business }} | {{ tier }}
 
 ## Body
 ```
-<p>New assessment submission ready for review.</p>
+<p>New assessment submission received.</p>
 <p><strong>Client:</strong> {{ fullName }} &middot; <strong>Company:</strong> {{ business }}<br>
 <strong>Industry:</strong> {{ industry }} &middot; <strong>Score:</strong> {{ totalScore }}/105 &middot; <strong>Tier:</strong> {{ tier }}</p>
 <p><strong>Recommendation:</strong> {{ recommendation }}</p>
