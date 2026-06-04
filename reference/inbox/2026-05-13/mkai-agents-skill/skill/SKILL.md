@@ -53,6 +53,7 @@ Detailed specs are in the `references/` folder:
 - `references/ops-supervisor.md` — Operations Supervisor agent spec
 - `references/sales-supervisor.md` — Sales Supervisor agent spec (TBD)
 - `references/delivery-supervisor.md` — Delivery Supervisor agent spec (TBD)
+- `references/competitor-scraper.md` — Competitor Scraper routine (free Instaloader replacement for the Apify actor in the content planner)
 - `references/framework.md` — Full hierarchy documentation
 
 ## Deployment Pattern
