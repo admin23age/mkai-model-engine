@@ -4,7 +4,7 @@
 - **Name:** Website Manager Agent (function-named — no persona)
 - **Role:** Website Build & SEO Agent
 - **Tier / Function:** Tier 2 — Web Worker
-- **Status:** ⚠️ In Development — Placeholder (platform TBD; no n8n workflow yet)
+- **Status:** ⚠️ OPEN role — not yet filled/built (platform TBD; no n8n workflow yet)
 - **Reports to:** Mei-Ling Vance (Marketing Manager)
 - **Direct reports:** none
 - **Memory Bank:** model-engine/memory-bank/agents/website-manager-agent.md
@@ -58,3 +58,4 @@ Determined during the Full AI Audit, before any build work begins:
 | Date | Action | Notes |
 |---|---|---|
 | 2026-05-29 | Bank created | Placeholder from spec v1.0; reports to Mei-Ling. In development. |
+| 2026-06-07 | Marked OPEN role | CEO direction — Website Manager is an open/unfilled role. |

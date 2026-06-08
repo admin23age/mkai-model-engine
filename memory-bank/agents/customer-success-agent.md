@@ -4,7 +4,7 @@
 - **Name:** Customer Success Agent (function-named — no persona)
 - **Role:** Onboarding & Activation Agent
 - **Tier / Function:** Tier 2 — Customer Success Worker
-- **Status:** Active — Ready to Build (no n8n workflow yet)
+- **Status:** OPEN role — not yet filled/built (no n8n workflow yet)
 - **Reports to:** Dr. Aris Thorne (Operations Manager & Customer Success)
 - **Direct reports:** none
 - **Memory Bank:** model-engine/memory-bank/agents/customer-success-agent.md
@@ -81,3 +81,4 @@ Warm, professional, proactive. Communicates like a dedicated account manager, no
 | Date | Action | Notes |
 |---|---|---|
 | 2026-05-29 | Bank created | From Operations Supervisor spec v1.0; reports to Aris. n8n workflow not yet built. |
+| 2026-06-07 | Marked OPEN role | CEO direction — Customer Success Manager is an open/unfilled role. |

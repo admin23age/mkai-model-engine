@@ -13,11 +13,11 @@ One memory bank per canonical MKAI agent. Filenames use the canonical org name
 | `tariq-al-mansoor.md` | Tariq Al-Mansoor | Customer Service Rep | Worker → Natalie |
 | `support-agent.md` | Support Agent | Post-Delivery Support Agent | Worker → Natalie (function-named) |
 | `mei-ling-vance.md` | Mei-Ling Vance | Marketing Manager | Supervisor (persona "Kayla") |
-| `jamal-washington.md` | Jamal Washington | Content Designer | Worker → Mei-Ling |
-| `website-manager-agent.md` | Website Manager Agent | Website Build & SEO Agent | Worker → Mei-Ling (function-named, in dev) |
+| `jamal-washington.md` | Jamal Washington | Social Media Manager | Worker → Mei-Ling |
+| `website-manager-agent.md` | Website Manager Agent | Website Build & SEO Agent | Worker → Mei-Ling (function-named, **OPEN role**) |
 | `aris-thorne.md` | Dr. Aris Thorne | Operations Manager & Customer Success | Ops Supervisor |
 | `elena-rostova.md` | Elena Rostova | Grant Writer | Worker → Aris |
-| `customer-success-agent.md` | Customer Success Agent | Onboarding & Activation Agent | Worker → Aris (function-named) |
+| `customer-success-agent.md` | Customer Success Agent | Onboarding & Activation Agent | Worker → Aris (function-named, **OPEN role**) |
 
 ## Canonical copy & mirror
 - **Canonical:** `model-engine/memory-bank/agents/` (active workspace).
