@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+</helmet>
+
+<!-- Section header -->
+<div style="position:absolute;left:80px;top:28px;font:600 13px/1 system-ui;color:rgba(60,50,40,.4);letter-spacing:1.5px;text-transform:uppercase">
+  Dorothy Dean Designs — Social Media Templates · 1080 × 1080
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE A: Product Spotlight                      -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:80px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">A — Product Spotlight</div>
+  <div style="width:420px;height:420px;background:#000;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Hot pink gradient top accent -->
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#E628CD,#DB27DF,#92278F)"></div>
+    <!-- Gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <!-- Brand logo (white on dark) -->
+    <div style="margin-top:20px;text-align:center">
+      <img src="./logo-white.png" style="width:100px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+
+    <!-- Product photo with magenta glow backdrop -->
+    <div style="position:relative;margin-top:18px;display:flex;align-items:center;justify-content:center">
+      <!-- Glow circle behind product -->
+      <div style="position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(230,40,205,.3) 0%,rgba(146,39,143,.15) 50%,transparent 70%);pointer-events:none"></div>
+      <image-slot id="product-spotlight" style="width:235px;height:200px;position:relative;z-index:1" shape="rounded" radius="8" placeholder="Drop product photo"></image-slot>
+    </div>
+
+    <!-- Product info -->
+    <div style="text-align:center;margin-top:16px">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:#fff;letter-spacing:0.5px">Product Name</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#E628CD;margin-top:5px">$49.99</div>
+    </div>
+
+    <!-- Shop Now CTA -->
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+      <div style="width:28px;height:1px;background:#F7D37B"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:9px;color:#F7D37B;letter-spacing:4px;text-transform:uppercase;font-weight:500">Shop Now</div>
+      <div style="width:28px;height:1px;background:#F7D37B"></div>
+    </div>
+
+    <!-- Handle -->
+    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;font-family:system-ui;font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE B: Inspirational Quote                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">B — Quote Card</div>
+  <div style="width:420px;height:420px;background:linear-gradient(160deg,#92278F 0%,#7B1F78 50%,#9E1F63 100%);border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <!-- Gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <!-- Decorative large quote mark -->
+    <div style="position:absolute;top:24px;left:30px;font-family:'Playfair Display',serif;font-size:100px;color:rgba(219,39,223,.25);line-height:1;font-style:italic">"</div>
+
+    <!-- Corner accent: top-right -->
+    <div style="position:absolute;top:12px;right:12px;width:36px;height:36px;border-top:1.5px solid rgba(247,211,123,.35);border-right:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+    <!-- Corner accent: bottom-left -->
+    <div style="position:absolute;bottom:12px;left:12px;width:36px;height:36px;border-bottom:1.5px solid rgba(247,211,123,.35);border-left:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+
+    <!-- Quote text -->
+    <div style="text-align:center;padding:0 50px;position:relative;z-index:1">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:#FFF5E6;line-height:1.35;font-style:italic">Create a life you can't wait to wake up to.</div>
+    </div>
+
+    <!-- Gold divider -->
+    <div style="width:44px;height:1.5px;background:#F7D37B;margin-top:28px"></div>
+
+    <!-- Handle -->
+    <div style="margin-top:18px;font-family:system-ui;font-size:9px;color:#F7D37B;letter-spacing:2.5px">@_dorothydeandesigns</div>
+
+    <!-- Brand logo bottom right (white on dark) -->
+    <div style="position:absolute;bottom:12px;right:14px">
+      <img src="./logo-white.png" style="width:85px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE C: Shop Our Products                      -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1080px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">C — Shop Our Products</div>
+  <div style="width:420px;height:420px;background:#FFF8F0;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Gold gradient top accent -->
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#B27F2C,#F7D37B,#B27F2C)"></div>
+    <!-- Gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <!-- Header -->
+    <div style="margin-top:16px;text-align:center">
+      <img src="./logo.png" style="width:60px;height:auto" alt="Dorothy Dean Designs">
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:2px;margin-top:2px;text-transform:uppercase">Shop Our</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#9E1F63;letter-spacing:2px;text-transform:uppercase;margin-top:-4px">Products</div>
+      <div style="width:50px;height:1.5px;background:#B27F2C;margin:4px auto 0"></div>
+    </div>
+
+    <!-- 2x2 Product grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;padding:0 36px;width:100%;box-sizing:border-box">
+      <!-- Product 1 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-1" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 1"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$29.99</div>
+      </div>
+      <!-- Product 2 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-2" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 2"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$34.99</div>
+      </div>
+      <!-- Product 3 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-3" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 3"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$24.99</div>
+      </div>
+      <!-- Product 4 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-4" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 4"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$39.99</div>
+      </div>
+    </div>
+
+    <!-- Handle -->
+    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;font-family:system-ui;font-size:8px;color:rgba(0,0,0,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE D: Product Mockup                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">D — Product Mockup</div>
+  <div style="width:420px;height:420px;background:#f5f0eb;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Subtle magenta accent glows -->
+    <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(219,39,223,.06) 0%,transparent 70%);pointer-events:none"></div>
+    <div style="position:absolute;bottom:0;left:0;width:160px;height:160px;background:radial-gradient(circle,rgba(146,39,143,.05) 0%,transparent 70%);pointer-events:none"></div>
+
+    <!-- Brand name top -->
+    <div style="margin-top:20px;text-align:center;position:relative;z-index:1">
+      <img src="./logo.png" style="width:95px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+
+    <!-- MOCK UP title -->
+    <div style="margin-top:4px;text-align:center;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:#1a1a1a;letter-spacing:3px;line-height:1;text-transform:uppercase">Mock Up</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:#9E1F63;font-style:italic;margin-top:1px">Product</div>
+    </div>
+
+    <!-- Hero product image -->
+    <div style="margin-top:10px;position:relative;z-index:1;display:flex;align-items:flex-end;gap:12px">
+      <!-- Main product (large) -->
+      <image-slot id="mockup-hero" style="width:175px;height:150px" shape="rounded" radius="8" placeholder="Main product"></image-slot>
+      <!-- Secondary products (smaller) -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <image-slot id="mockup-item-2" style="width:95px;height:70px" shape="rounded" radius="6" placeholder="Item 2"></image-slot>
+        <image-slot id="mockup-item-3" style="width:95px;height:70px" shape="rounded" radius="6" placeholder="Item 3"></image-slot>
+      </div>
+    </div>
+
+    <!-- Size info -->
+    <div style="margin-top:10px;text-align:center;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#1a1a1a;letter-spacing:3px;text-transform:uppercase">Size</div>
+      <div style="font-family:'Playfair Display',serif;font-size:11px;font-weight:600;color:#B27F2C;letter-spacing:2px;margin-top:1px">S / M / L / XL</div>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="margin-top:8px;padding:4px 20px;border:1.5px solid #9E1F63;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:600;color:#9E1F63;letter-spacing:4px;text-transform:uppercase">Order Now</div>
+    </div>
+
+    <!-- Website -->
+    <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-family:'Playfair Display',serif;font-size:8px;color:rgba(0,0,0,.3);letter-spacing:2px;text-transform:uppercase">www.dorothydeandesigns.com</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE E: AI Visual Frame                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:2080px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">E — AI Visual Frame</div>
+  <div style="width:420px;height:420px;background:#fff;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.12);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+
+    <!-- Outer border: earth-tone bronze → gold gradient -->
+    <div style="position:absolute;inset:0;padding:5px;background:linear-gradient(135deg,#B27F2C 0%,#C9943A 30%,#F7D37B 55%,#C9943A 80%,#B27F2C 100%);pointer-events:none">
+      <div style="width:100%;height:100%;background:#fff"></div>
+    </div>
+
+    <!-- Inner gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(178,127,44,.3);pointer-events:none"></div>
+
+    <!-- Large image drop zone -->
+    <image-slot id="ai-visual" style="width:366px;height:366px;position:relative;z-index:1" shape="rounded" radius="0" placeholder="Drop AI visual here"></image-slot>
+
+    <!-- Brand logo top-right -->
+    <div style="position:absolute;top:16px;right:18px;z-index:2;pointer-events:none">
+      <img src="./logo.png" style="width:65px;height:auto;opacity:0.5" alt="Dorothy Dean Designs">
+    </div>
+  </div>
+</div>
+
+
+<!-- Section header: Row 2 -->
+<div style="position:absolute;left:80px;top:530px;font:600 13px/1 system-ui;color:rgba(60,50,40,.4);letter-spacing:1.5px;text-transform:uppercase">
+  Story / TikTok · 1080 × 1920
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- STORY A: Product Spotlight (9:16)                  -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:80px;top:570px;width:236px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">Story — Product Spotlight</div>
+  <div style="width:236px;height:420px;background:#000;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#E628CD,#DB27DF,#92278F)"></div>
+    <div style="position:absolute;inset:8px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <div style="margin-top:24px;text-align:center">
+      <img src="./logo-white.png" style="width:90px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+
+    <div style="position:relative;margin-top:16px;display:flex;align-items:center;justify-content:center">
+      <div style="position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(230,40,205,.25) 0%,transparent 70%);pointer-events:none"></div>
+      <image-slot id="story-product" style="width:190px;height:180px;position:relative;z-index:1" shape="rounded" radius="8" placeholder="Drop product photo"></image-slot>
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#fff">Product Name</div>
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#E628CD;margin-top:4px">$49.99</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+      <div style="width:20px;height:1px;background:#F7D37B"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:9px;color:#F7D37B;letter-spacing:4px;text-transform:uppercase">Shop Now</div>
+      <div style="width:20px;height:1px;background:#F7D37B"></div>
+    </div>
+
+    <div style="position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:system-ui;font-size:7px;color:rgba(255,255,255,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- STORY B: Quote Card (9:16)                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:396px;top:570px;width:236px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">Story — Quote Card</div>
+  <div style="width:236px;height:420px;background:linear-gradient(160deg,#92278F 0%,#7B1F78 50%,#9E1F63 100%);border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:8px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <div style="position:absolute;top:18px;left:20px;font-family:'Playfair Display',serif;font-size:80px;color:rgba(219,39,223,.2);line-height:1;font-style:italic">"</div>
+
+    <div style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-top:1.5px solid rgba(247,211,123,.35);border-right:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+    <div style="position:absolute;bottom:8px;left:8px;width:30px;height:30px;border-bottom:1.5px solid rgba(247,211,123,.35);border-left:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+
+    <div style="text-align:center;padding:0 28px;position:relative;z-index:1">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:#FFF5E6;line-height:1.35;font-style:italic">Create a life you can't wait to wake up to.</div>
+    </div>
+
+    <div style="width:36px;height:1.5px;background:#F7D37B;margin-top:24px"></div>
+    <div style="margin-top:14px;font-family:system-ui;font-size:8px;color:#F7D37B;letter-spacing:2px">@_dorothydeandesigns</div>
+
+    <div style="position:absolute;bottom:10px;right:10px">
+      <img src="./logo-white.png" style="width:65px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+  </div>
+</div>
+
+<!-- Section header: Facebook -->
+<div style="position:absolute;left:712px;top:530px;font:600 13px/1 system-ui;color:rgba(60,50,40,.4);letter-spacing:1.5px;text-transform:uppercase">
+  Facebook · 1200 × 630
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- FACEBOOK: Shop Our Products (1.9:1)                -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:712px;top:570px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">Facebook — Shop Our Products</div>
+  <div style="width:420px;height:220px;background:#FFF8F0;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;display:flex;align-items:center">
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#B27F2C,#F7D37B,#B27F2C)"></div>
+    <div style="position:absolute;inset:8px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <!-- Left: Brand + headline -->
+    <div style="flex:0 0 145px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px">
+      <img src="./logo.png" style="width:65px;height:auto" alt="Dorothy Dean Designs">
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#1a1a1a;letter-spacing:1px;text-transform:uppercase;margin-top:4px;text-align:center">Shop Our</div>
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#9E1F63;letter-spacing:1px;text-transform:uppercase;margin-top:-2px;text-align:center">Products</div>
+      <div style="width:30px;height:1px;background:#B27F2C;margin-top:6px"></div>
+    </div>
+
+    <!-- Right: Product row -->
+    <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:14px 20px 14px 8px">
+      <image-slot id="fb-item-1" style="width:72px;height:72px" shape="rounded" radius="6" placeholder="1"></image-slot>
+      <image-slot id="fb-item-2" style="width:72px;height:72px" shape="rounded" radius="6" placeholder="2"></image-slot>
+      <image-slot id="fb-item-3" style="width:72px;height:72px" shape="rounded" radius="6" placeholder="3"></image-slot>
+    </div>
+
+    <div style="position:absolute;bottom:10px;right:14px;font-family:system-ui;font-size:7px;color:rgba(0,0,0,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+<!-- Section header: Pinterest -->
+<div style="position:absolute;left:1212px;top:530px;font:600 13px/1 system-ui;color:rgba(60,50,40,.4);letter-spacing:1.5px;text-transform:uppercase">
+  Pinterest · 1000 × 1500
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PINTEREST: Quote Card (2:3)                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1212px;top:570px;width:280px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">Pinterest — Quote Card</div>
+  <div style="width:280px;height:420px;background:linear-gradient(160deg,#92278F 0%,#7B1F78 50%,#9E1F63 100%);border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="position:absolute;inset:10px;border:1px solid rgba(247,211,123,.4);pointer-events:none"></div>
+
+    <div style="position:absolute;top:20px;left:22px;font-family:'Playfair Display',serif;font-size:90px;color:rgba(219,39,223,.2);line-height:1;font-style:italic">"</div>
+
+    <div style="position:absolute;top:10px;right:10px;width:34px;height:34px;border-top:1.5px solid rgba(247,211,123,.35);border-right:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+    <div style="position:absolute;bottom:10px;left:10px;width:34px;height:34px;border-bottom:1.5px solid rgba(247,211,123,.35);border-left:1.5px solid rgba(247,211,123,.35);pointer-events:none"></div>
+
+    <div style="text-align:center;padding:0 36px;position:relative;z-index:1">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;color:#FFF5E6;line-height:1.35;font-style:italic">Create a life you can't wait to wake up to.</div>
+    </div>
+
+    <div style="width:40px;height:1.5px;background:#F7D37B;margin-top:28px"></div>
+    <div style="margin-top:16px;font-family:system-ui;font-size:8px;color:#F7D37B;letter-spacing:2px">@_dorothydeandesigns</div>
+
+    <div style="position:absolute;bottom:12px;right:14px">
+      <img src="./logo-white.png" style="width:70px;height:auto" alt="Dorothy Dean Designs">
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE F: New Collection                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:2580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">F — New Collection</div>
+  <div style="width:420px;height:420px;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column">
+    <!-- Top section: Vibrant Pink gradient -->
+    <div style="background:linear-gradient(135deg,#E628CD 0%,#DB27DF 60%,#92278F 100%);flex:0 0 150px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+      <div style="position:absolute;top:6px"><img src="./logo.png" style="width:80px;height:auto" alt="Dorothy Dean Designs"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:#000;letter-spacing:2px;line-height:1;margin-top:6px">NEW</div>
+      <div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:500;color:#fff;letter-spacing:10px;text-transform:uppercase;margin-top:5px">Collection</div>
+    </div>
+
+    <!-- Gold accent line -->
+    <div style="height:3px;background:#F7D37B;flex-shrink:0"></div>
+
+    <!-- Middle: Product images row on cream -->
+    <div style="background:#FFF8F0;flex:0 0 110px;display:flex;align-items:center;justify-content:center;gap:12px;padding:0 22px">
+      <image-slot id="newcol-1" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 1"></image-slot>
+      <image-slot id="newcol-2" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 2"></image-slot>
+      <image-slot id="newcol-3" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 3"></image-slot>
+    </div>
+
+    <!-- Gold accent line -->
+    <div style="height:3px;background:#F7D37B;flex-shrink:0"></div>
+
+    <!-- Bottom section: Black -->
+    <div style="background:#000;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:400;color:#F7D37B;font-style:italic;letter-spacing:1px">Fall / Winter 2026</div>
+      <div style="margin-top:8px;padding:5px 18px;border:1.5px solid #F7D37B;display:inline-flex;align-items:center">
+        <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:600;color:#fff;letter-spacing:5px;text-transform:uppercase">Shop Now</div>
+      </div>
+      <div style="position:absolute;bottom:12px;font-family:'Playfair Display',serif;font-size:8px;color:#DB27DF;letter-spacing:3px;text-transform:uppercase">@_dorothydeandesigns</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accentColor&quot;: {
+    &quot;editor&quot;: &quot;color&quot;,
+    &quot;default&quot;: &quot;#E628CD&quot;,
+    &quot;options&quot;: [&quot;#E628CD&quot;, &quot;#DB27DF&quot;, &quot;#92278F&quot;, &quot;#9E1F63&quot;],
+    &quot;section&quot;: &quot;Brand&quot;
+  },
+  &quot;goldTone&quot;: {
+    &quot;editor&quot;: &quot;color&quot;,
+    &quot;default&quot;: &quot;#F7D37B&quot;,
+    &quot;options&quot;: [&quot;#F7D37B&quot;, &quot;#B27F2C&quot;, [&quot;#F7D37B&quot;, &quot;#B27F2C&quot;]],
+    &quot;section&quot;: &quot;Brand&quot;
+  }
+}"></script>
+</body>
+</html>

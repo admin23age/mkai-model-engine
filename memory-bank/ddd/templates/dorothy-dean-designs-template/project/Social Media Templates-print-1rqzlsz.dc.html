@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-print-defaults>
+@media print {
+  @page { margin: 0.5in; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+</helmet>
+
+<!-- Section header -->
+<div style="position:absolute;left:80px;top:28px;font:600 13px/1 system-ui;color:rgba(60,50,40,.4);letter-spacing:1.5px;text-transform:uppercase">
+  Dorothy Dean Designs — Social Media Templates · 1080 × 1080
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE A: Product Spotlight                      -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:80px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">A — Product Spotlight</div>
+  <div style="width:420px;height:420px;background:#000;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Hot pink gradient top accent -->
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#E628CD,#DB27DF,#92278F)"></div>
+    <!-- Gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(247,211,123,.45);pointer-events:none"></div>
+
+    <!-- Brand name -->
+    <div style="margin-top:32px;text-align:center">
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#F7D37B;letter-spacing:5px;text-transform:uppercase">Dorothy Dean</div>
+      <div style="font-family:'Playfair Display',serif;font-size:8px;font-weight:400;color:rgba(247,211,123,.7);letter-spacing:8px;text-transform:uppercase;margin-top:3px">Designs</div>
+    </div>
+
+    <!-- Product photo with magenta glow backdrop -->
+    <div style="position:relative;margin-top:18px;display:flex;align-items:center;justify-content:center">
+      <!-- Glow circle behind product -->
+      <div style="position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(230,40,205,.3) 0%,rgba(146,39,143,.15) 50%,transparent 70%);pointer-events:none"></div>
+      <image-slot id="product-spotlight" style="width:235px;height:200px;position:relative;z-index:1" shape="rounded" radius="8" placeholder="Drop product photo"></image-slot>
+    </div>
+
+    <!-- Product info -->
+    <div style="text-align:center;margin-top:16px">
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:#fff;letter-spacing:0.5px">Product Name</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#E628CD;margin-top:5px">$49.99</div>
+    </div>
+
+    <!-- Shop Now CTA -->
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+      <div style="width:28px;height:1px;background:#F7D37B"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:9px;color:#F7D37B;letter-spacing:4px;text-transform:uppercase;font-weight:500">Shop Now</div>
+      <div style="width:28px;height:1px;background:#F7D37B"></div>
+    </div>
+
+    <!-- Handle -->
+    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;font-family:system-ui;font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE B: Inspirational Quote                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">B — Quote Card</div>
+  <div style="width:420px;height:420px;background:linear-gradient(160deg,#92278F 0%,#7B1F78 50%,#9E1F63 100%);border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <!-- Gold frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(247,211,123,.35);pointer-events:none"></div>
+
+    <!-- Decorative large quote mark -->
+    <div style="position:absolute;top:24px;left:30px;font-family:'Playfair Display',serif;font-size:100px;color:rgba(219,39,223,.25);line-height:1;font-style:italic">"</div>
+
+    <!-- Corner accent: top-right -->
+    <div style="position:absolute;top:12px;right:12px;width:40px;height:40px;border-top:2px solid rgba(247,211,123,.3);border-right:2px solid rgba(247,211,123,.3);pointer-events:none"></div>
+    <!-- Corner accent: bottom-left -->
+    <div style="position:absolute;bottom:12px;left:12px;width:40px;height:40px;border-bottom:2px solid rgba(247,211,123,.3);border-left:2px solid rgba(247,211,123,.3);pointer-events:none"></div>
+
+    <!-- Quote text -->
+    <div style="text-align:center;padding:0 50px;position:relative;z-index:1">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:#FFF5E6;line-height:1.35;font-style:italic">Create a life you can't wait to wake up to.</div>
+    </div>
+
+    <!-- Gold divider -->
+    <div style="width:44px;height:1.5px;background:#F7D37B;margin-top:28px"></div>
+
+    <!-- Handle -->
+    <div style="margin-top:18px;font-family:system-ui;font-size:9px;color:#F7D37B;letter-spacing:2.5px">@_dorothydeandesigns</div>
+
+    <!-- Brand mark bottom right -->
+    <div style="position:absolute;bottom:18px;right:22px;text-align:right">
+      <div style="font-family:'Playfair Display',serif;font-size:9px;color:rgba(247,211,123,.45);font-style:italic">Dorothy Dean</div>
+      <div style="font-family:'Playfair Display',serif;font-size:6px;color:rgba(247,211,123,.4);letter-spacing:3px;text-transform:uppercase;margin-top:2px">Designs</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE C: Shop Our Products                      -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1080px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">C — Shop Our Products</div>
+  <div style="width:420px;height:420px;background:#FFF8F0;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Magenta gradient top accent -->
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#E628CD,#DB27DF,#92278F)"></div>
+    <!-- Raspberry frame border -->
+    <div style="position:absolute;inset:12px;border:1px solid rgba(158,31,99,.25);pointer-events:none"></div>
+
+    <!-- Header -->
+    <div style="margin-top:22px;text-align:center">
+      <div style="font-family:'Playfair Display',serif;font-size:8px;color:#B27F2C;letter-spacing:6px;text-transform:uppercase;font-weight:500">Dorothy Dean Designs</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a1a1a;letter-spacing:2px;margin-top:4px;text-transform:uppercase">Shop Our</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#9E1F63;letter-spacing:2px;text-transform:uppercase;margin-top:-3px">Products</div>
+      <div style="width:50px;height:1.5px;background:#B27F2C;margin:6px auto 0"></div>
+    </div>
+
+    <!-- 2x2 Product grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding:0 36px;width:100%;box-sizing:border-box">
+      <!-- Product 1 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-1" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 1"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$29.99</div>
+      </div>
+      <!-- Product 2 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-2" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 2"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$34.99</div>
+      </div>
+      <!-- Product 3 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-3" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 3"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$24.99</div>
+      </div>
+      <!-- Product 4 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <image-slot id="shop-item-4" style="width:150px;height:95px" shape="rounded" radius="6" placeholder="Product 4"></image-slot>
+        <div style="font-family:'Playfair Display',serif;font-size:10px;color:#1a1a1a;text-align:center">Product Name</div>
+        <div style="font-family:'Playfair Display',serif;font-size:9px;color:#9E1F63;font-weight:600">$39.99</div>
+      </div>
+    </div>
+
+    <!-- Handle -->
+    <div style="position:absolute;bottom:16px;left:0;right:0;text-align:center;font-family:system-ui;font-size:8px;color:rgba(0,0,0,.3);letter-spacing:1.5px">@_dorothydeandesigns</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE D: Product Mockup                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:1580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">D — Product Mockup</div>
+  <div style="width:420px;height:420px;background:#f5f0eb;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.15);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center">
+    <!-- Subtle magenta accent glows -->
+    <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(219,39,223,.06) 0%,transparent 70%);pointer-events:none"></div>
+    <div style="position:absolute;bottom:0;left:0;width:160px;height:160px;background:radial-gradient(circle,rgba(146,39,143,.05) 0%,transparent 70%);pointer-events:none"></div>
+
+    <!-- Brand name top -->
+    <div style="margin-top:20px;text-align:center;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:10px;font-weight:600;color:#B27F2C;letter-spacing:5px;text-transform:uppercase">Dorothy Dean Designs</div>
+    </div>
+
+    <!-- MOCK UP title -->
+    <div style="margin-top:4px;text-align:center;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:#1a1a1a;letter-spacing:3px;line-height:1;text-transform:uppercase">Mock Up</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:#9E1F63;font-style:italic;margin-top:1px">Product</div>
+    </div>
+
+    <!-- Hero product image -->
+    <div style="margin-top:10px;position:relative;z-index:1;display:flex;align-items:flex-end;gap:12px">
+      <!-- Main product (large) -->
+      <image-slot id="mockup-hero" style="width:175px;height:150px" shape="rounded" radius="8" placeholder="Main product"></image-slot>
+      <!-- Secondary products (smaller) -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <image-slot id="mockup-item-2" style="width:95px;height:70px" shape="rounded" radius="6" placeholder="Item 2"></image-slot>
+        <image-slot id="mockup-item-3" style="width:95px;height:70px" shape="rounded" radius="6" placeholder="Item 3"></image-slot>
+      </div>
+    </div>
+
+    <!-- Size info -->
+    <div style="margin-top:10px;text-align:center;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#1a1a1a;letter-spacing:3px;text-transform:uppercase">Size</div>
+      <div style="font-family:'Playfair Display',serif;font-size:11px;font-weight:600;color:#B27F2C;letter-spacing:2px;margin-top:1px">S / M / L / XL</div>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="margin-top:8px;padding:4px 20px;border:1.5px solid #9E1F63;position:relative;z-index:1">
+      <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:600;color:#9E1F63;letter-spacing:4px;text-transform:uppercase">Order Now</div>
+    </div>
+
+    <!-- Website -->
+    <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-family:'Playfair Display',serif;font-size:8px;color:rgba(0,0,0,.3);letter-spacing:2px;text-transform:uppercase">www.dorothydeandesigns.com</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE E: AI Visual Frame                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:2080px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">E — AI Visual Frame</div>
+  <div style="width:420px;height:420px;background:#fff;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.12);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+
+    <!-- Outer border: gradient pink → purple → gold -->
+    <div style="position:absolute;inset:0;padding:6px;background:linear-gradient(135deg,#E628CD 0%,#DB27DF 25%,#92278F 50%,#9E1F63 75%,#F7D37B 100%);pointer-events:none">
+      <div style="width:100%;height:100%;background:#fff"></div>
+    </div>
+
+    <!-- Inner decorative border in raspberry -->
+    <div style="position:absolute;inset:14px;border:1px solid rgba(158,31,99,.2);pointer-events:none"></div>
+
+    <!-- Corner flourishes: top-left -->
+    <div style="position:absolute;top:14px;left:14px;width:30px;height:30px;border-top:2px solid #B27F2C;border-left:2px solid #B27F2C;pointer-events:none"></div>
+    <!-- Corner flourishes: top-right -->
+    <div style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-top:2px solid #B27F2C;border-right:2px solid #B27F2C;pointer-events:none"></div>
+    <!-- Corner flourishes: bottom-left -->
+    <div style="position:absolute;bottom:14px;left:14px;width:30px;height:30px;border-bottom:2px solid #B27F2C;border-left:2px solid #B27F2C;pointer-events:none"></div>
+    <!-- Corner flourishes: bottom-right -->
+    <div style="position:absolute;bottom:14px;right:14px;width:30px;height:30px;border-bottom:2px solid #B27F2C;border-right:2px solid #B27F2C;pointer-events:none"></div>
+
+    <!-- Large image drop zone -->
+    <image-slot id="ai-visual" style="width:380px;height:380px;position:relative;z-index:1" shape="rounded" radius="0" placeholder="Drop AI visual here"></image-slot>
+
+    <!-- Subtle brand watermark bottom center -->
+    <div style="position:absolute;bottom:20px;left:0;right:0;text-align:center;z-index:2;pointer-events:none">
+      <div style="font-family:'Playfair Display',serif;font-size:8px;color:rgba(158,31,99,.35);letter-spacing:5px;text-transform:uppercase">Dorothy Dean Designs</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TEMPLATE F: New Collection                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div style="position:absolute;left:2580px;top:72px;width:420px">
+  <div data-drags-parent="1" style="position:absolute;top:-22px;font:500 11px/1 system-ui;color:rgba(60,50,40,.6);letter-spacing:0.3px">F — New Collection</div>
+  <div style="width:420px;height:420px;border-radius:3px;box-shadow:0 4px 20px rgba(0,0,0,.35);position:relative;overflow:hidden;display:flex;flex-direction:column">
+    <!-- Top section: Vibrant Pink gradient -->
+    <div style="background:linear-gradient(135deg,#E628CD 0%,#DB27DF 60%,#92278F 100%);flex:0 0 150px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+      <div style="position:absolute;top:12px;font-family:'Playfair Display',serif;font-size:8px;color:rgba(255,255,255,.7);letter-spacing:5px;text-transform:uppercase;font-weight:500">Dorothy Dean Designs</div>
+      <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:#000;letter-spacing:2px;line-height:1;margin-top:6px">NEW</div>
+      <div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:500;color:#fff;letter-spacing:10px;text-transform:uppercase;margin-top:5px">Collection</div>
+    </div>
+
+    <!-- Gold accent line -->
+    <div style="height:3px;background:#F7D37B;flex-shrink:0"></div>
+
+    <!-- Middle: Product images row on cream -->
+    <div style="background:#FFF8F0;flex:0 0 110px;display:flex;align-items:center;justify-content:center;gap:12px;padding:0 22px">
+      <image-slot id="newcol-1" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 1"></image-slot>
+      <image-slot id="newcol-2" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 2"></image-slot>
+      <image-slot id="newcol-3" style="width:88px;height:88px" shape="rounded" radius="6" placeholder="Photo 3"></image-slot>
+    </div>
+
+    <!-- Gold accent line -->
+    <div style="height:3px;background:#F7D37B;flex-shrink:0"></div>
+
+    <!-- Bottom section: Black -->
+    <div style="background:#000;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:400;color:#F7D37B;font-style:italic;letter-spacing:1px">Fall / Winter 2026</div>
+      <div style="margin-top:8px;padding:5px 18px;border:1.5px solid #F7D37B;display:inline-flex;align-items:center">
+        <div style="font-family:'Playfair Display',serif;font-size:9px;font-weight:600;color:#fff;letter-spacing:5px;text-transform:uppercase">Shop Now</div>
+      </div>
+      <div style="position:absolute;bottom:12px;font-family:'Playfair Display',serif;font-size:8px;color:#DB27DF;letter-spacing:3px;text-transform:uppercase">@_dorothydeandesigns</div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accentColor&quot;: {
+    &quot;editor&quot;: &quot;color&quot;,
+    &quot;default&quot;: &quot;#E628CD&quot;,
+    &quot;options&quot;: [&quot;#E628CD&quot;, &quot;#DB27DF&quot;, &quot;#92278F&quot;, &quot;#9E1F63&quot;],
+    &quot;section&quot;: &quot;Brand&quot;
+  },
+  &quot;goldTone&quot;: {
+    &quot;editor&quot;: &quot;color&quot;,
+    &quot;default&quot;: &quot;#F7D37B&quot;,
+    &quot;options&quot;: [&quot;#F7D37B&quot;, &quot;#B27F2C&quot;, [&quot;#F7D37B&quot;, &quot;#B27F2C&quot;]],
+    &quot;section&quot;: &quot;Brand&quot;
+  }
+}"></script>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "Social Media Templates";
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        !settleRoot.querySelector('.sc-placeholder');
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  // Project support.js may predate runtime default-seeding; push via bridge.
+  if (isDc && window.__dcSetProps && window.__dcRootName) {
+    try {
+      const dpEl = document.querySelector('script[data-dc-script]');
+      const meta = JSON.parse((dpEl && dpEl.getAttribute('data-props')) || '{}');
+      const bag = {};
+      for (const k in meta)
+        if (k[0] !== '$' && meta[k] && meta[k].default !== undefined)
+          bag[k] = meta[k].default;
+      if (Object.keys(bag).length) {
+        window.__dcSetProps(window.__dcRootName(), bag);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    } catch (e) {}
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    for (let y = 0; y <= full; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  try { await document.fonts.ready; } catch (e) {}
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+  } catch (e) {}
+  // Size the PDF page to the rendered design unless the file opted into
+  // standard paper via @page{size:letter|A4|…}. Decks own their own @page.
+  // Wrappers (body, …) lose padding+margin so the frame sits at (0,0); the
+  // frame itself loses only margin — its padding is INSIDE the measured
+  // rect and must stay, or content shifts and leaves a gap at bottom/right.
+  var __m = null;
+  try { __m = (() => {
+  var docEl = document.documentElement;
+  var doc = { width: docEl.scrollWidth, height: docEl.scrollHeight };
+
+  var ds = document.querySelector('deck-stage');
+  if (ds) {
+    var dw = Number(ds.getAttribute('width')) || 1920;
+    var dh = Number(ds.getAttribute('height')) || 1080;
+    var n = typeof ds.length === 'number' ? ds.length : ds.children.length;
+    var idx = typeof ds.index === 'number' ? ds.index : 0;
+    var frames = [];
+    for (var i = 0; i < n; i++) frames.push({ left: 0, top: 0, width: dw, height: dh });
+    return { kind: 'deck', doc: doc, frames: frames,
+      authored: frames.map(function(){return{width:true,height:true}}),
+      deck: { width: dw, height: dh, slideCount: n, index: idx },
+      signals: { paperPage: false, pxPage: false } };
+  }
+
+  var paperPage = false, pxPage = false;
+  var eachRule = function (fn) {
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      var rs; try { rs = document.styleSheets[s].cssRules; } catch (e) { continue; }
+      for (var r = 0; r < rs.length; r++) {
+        fn(rs[r]);
+        if (rs[r].cssRules) for (var n = 0; n < rs[r].cssRules.length; n++) fn(rs[r].cssRules[n]);
+      }
+    }
+  };
+  eachRule(function (r) {
+    if (r.type !== 6) return;
+    var m = /\bsize\s*:\s*([^;}]+)/i.exec(r.cssText || '');
+    if (!m) return;
+    if (/\b(letter|a[3-5]|legal|ledger)\b/i.test(m[1])) paperPage = true;
+    if (/\d+(?:\.\d+)?px\b/i.test(m[1])) pxPage = true;
+  });
+  var signals = { paperPage: paperPage, pxPage: pxPage };
+
+  var pxVal = function (v) {
+    var m = /^(\d+(?:\.\d+)?)px$/.exec(v || ''); return m ? +m[1] : 0;
+  };
+  var authoredPx = function (el, prop) {
+    if (pxVal(el.style[prop])) return true;
+    var attr = el.getAttribute(prop);
+    if (attr && /^\d+$/.test(attr)) return true;
+    var hit = false;
+    eachRule(function (r) {
+      if (hit || r.type !== 1 || !r.style) return;
+      try { if (el.matches(r.selectorText) && pxVal(r.style[prop])) hit = true; } catch (e) {}
+    });
+    return hit;
+  };
+
+  var el = document.body, rootPxW = false;
+  for (;;) {
+    var kids = [];
+    for (var c = 0; c < el.children.length; c++) {
+      var t = el.children[c].tagName;
+      if (t !== 'SCRIPT' && t !== 'STYLE' && t !== 'TEMPLATE') kids.push(el.children[c]);
+    }
+    if (kids.length !== 1 || !(kids[0] instanceof HTMLElement)) break;
+    el.setAttribute('data-om-frame-wrap', '');
+    el = kids[0];
+    rootPxW = authoredPx(el, 'width');
+    if (rootPxW) break;
+  }
+  if (!rootPxW) rootPxW = authoredPx(el, 'width');
+
+  // @page{size:letter} alone is a flowing doc; with a px-width root it's a
+  // fixed sheet pretending to be paper — fall through and size to render.
+  if (paperPage && !rootPxW) {
+    return { kind: 'paper-doc', doc: doc, signals: signals,
+      frames: [{ left: 0, top: 0, width: doc.width, height: doc.height }],
+      authored: [{ width: false, height: false }] };
+  }
+
+  var sx = window.scrollX || 0, sy = window.scrollY || 0;
+  var rectOf = function (e) {
+    var r = e.getBoundingClientRect();
+    var oy; try { oy = getComputedStyle(e).overflowY; } catch (err) {}
+    var h = oy === 'visible' ? Math.max(r.height, e.scrollHeight || 0) : r.height;
+    return { left: r.left + sx, top: r.top + sy, width: r.width, height: h };
+  };
+
+  // Multi-frame: ≥2 visible non-fixed children, each with authored px width
+  // AND height, all within ±2px of each other. Off unless the page opts in
+  // via data-om-multi-frame on the stop element — guards against card grids
+  // and pricing tables that match the geometry but aren't separate canvases.
+  if (el.hasAttribute('data-om-multi-frame')) {
+    var cands = [];
+    for (var k = 0; k < el.children.length; k++) {
+      var ch = el.children[k];
+      var cs; try { cs = getComputedStyle(ch); } catch (e) { continue; }
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.position === 'fixed') continue;
+      var rc = rectOf(ch);
+      if (rc.width < 2 || rc.height < 2) continue;
+      if (!authoredPx(ch, 'width') || !authoredPx(ch, 'height')) continue;
+      cands.push(rc);
+    }
+    if (cands.length >= 2) {
+      var w0 = cands[0].width, h0 = cands[0].height, ok = true;
+      for (var q = 1; q < cands.length; q++)
+        if (Math.abs(cands[q].width - w0) > 2 || Math.abs(cands[q].height - h0) > 2) ok = false;
+      if (ok) return { kind: 'multi-frame', doc: doc, signals: signals,
+        frames: cands, authored: cands.map(function(){return{width:true,height:true}}) };
+    }
+  }
+
+  el.setAttribute('data-om-frame', '');
+  return { kind: 'single-canvas', doc: doc, signals: signals,
+    frames: [rectOf(el)],
+    authored: [{ width: rootPxW, height: authoredPx(el, 'height') }] };
+})(); } catch (e) {}
+  var frame = null;
+  if (__m && __m.kind === 'single-canvas') {
+    var f = __m.frames && __m.frames[0];
+    if (f && f.width >= 200 && f.height >= 200) {
+      frame = f;
+      var fst = document.createElement('style');
+      fst.textContent = '@media print{@page{size:' + Math.ceil(f.width) + 'px ' +
+        Math.ceil(f.height) + 'px;margin:0}' +
+        'html,body,[data-om-frame-wrap]{padding:0!important;margin:0!important;background:none!important}' +
+        '[data-om-frame]{margin:0!important}}';
+      document.body.appendChild(fst);
+    }
+  }
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks (slides
+  // are sized to the page) and for fixed-size canvases (frame set, or an author
+  // px-based @page) — runs as before for flowing docs on letter/A4.
+  try {
+    if (!ds && !frame && !(__m && __m.signals && __m.signals.pxPage)) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a real @page margin only when the source has
+      // no @page of its own; computed style can't tell us (it reports screen
+      // media), so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /@page\s*\{[^}]*margin/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          if (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always') {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>
